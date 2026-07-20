@@ -1,0 +1,4 @@
+interface:
+  display_name: "PPT Creaters"
+  short_description: "Build image-first presentations with enforced visual and packaging gates."
+  default_prompt: "Use $ppt-creaters to turn my source into independently specified, previewed, high-resolution slide images and an image-only PPTX."
