@@ -1,0 +1,20 @@
+{
+  "dataset_facts": {"columns": ["项目", "内容"], "rows": [
+    ["数据文件", "全场_2026-06-25_10-41-47_961_原始数据-5分钟-20260625.xlsx"],
+    ["数据范围", "2026-02-01 00:00:00 → 2026-06-25 10:35:00"],
+    ["覆盖机组", "#11、#13、#14、#16 / MySE6.25MW"],
+    ["数据粒度", "5 分钟平均值"]
+  ]},
+  "full_test_models": {"columns": ["模型", "Speed MAE", "Speed RMSE", "风向角 MAE"], "rows": [
+    ["Persistence", "metric:persistence_speed_mae", "metric:persistence_speed_rmse", "未输出"],
+    ["FuXi-CFD best", "metric:fuxi_best_speed_mae", "metric:fuxi_best_speed_rmse", "metric:fuxi_best_direction_mae"],
+    ["PatchTST", "metric:patchtst_full_speed_mae", "metric:patchtst_full_speed_rmse", "metric:patchtst_full_direction_mae"],
+    ["VIMTS", "metric:vimts_speed_mae", "metric:vimts_speed_rmse", "metric:vimts_direction_mae"],
+    ["KAFNet", "metric:kafnet_speed_mae", "metric:kafnet_speed_rmse", "metric:kafnet_direction_mae"]
+  ]},
+  "power_models": {"columns": ["模型", "全测试集 MAE(kW)", "正常工况 MAE(kW)", "全测试集 R²", "正常工况 R²"], "rows": [
+    ["XGBoost 高功率加权", "metric:xgb_full_mae", "metric:xgb_normal_mae", "metric:xgb_full_r2", "metric:xgb_normal_r2"],
+    ["MLP + Embedding + 加权", "metric:mlp_full_mae", "metric:mlp_normal_mae", "metric:mlp_full_r2", "metric:mlp_normal_r2"],
+    ["MoE 多工况模型", "metric:moe_full_mae", "metric:moe_normal_mae", "metric:moe_full_r2", "metric:moe_normal_r2"]
+  ]}
+}

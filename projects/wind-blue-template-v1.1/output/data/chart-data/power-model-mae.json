@@ -1,0 +1,9 @@
+{
+  "chart_id": "power_model_mae",
+  "title": "功率映射模型 MAE",
+  "metric_ids": ["xgb_full_mae", "mlp_full_mae", "moe_full_mae"],
+  "categories": ["XGBoost", "MLP", "MoE"],
+  "values": [208.83, 182.81, 179.17],
+  "unit": "kW",
+  "source": "整合版PPT内容大纲.md"
+}

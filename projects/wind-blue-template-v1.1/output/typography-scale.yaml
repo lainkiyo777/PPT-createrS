@@ -1,0 +1,24 @@
+font_family: 微软雅黑
+template_secondary: 等线
+canvas:
+  width: 1920
+  height: 1080
+roles:
+  title:
+    min_px: 42
+    preferred_px: 50
+    max_px: 78
+  body:
+    min_px: 28
+    preferred_px: 30
+    max_px: 38
+  chart_label:
+    min_px: 24
+    preferred_px: 26
+    max_px: 32
+  footnote:
+    min_px: 18
+    preferred_px: 20
+    max_px: 24
+consistency_tolerance: 0.10
+overflow_policy: shorten_or_split_before_shrinking

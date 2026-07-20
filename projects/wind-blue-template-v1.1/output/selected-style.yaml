@@ -1,0 +1,16 @@
+source_template: ../../../skills/ppt-creaters/references/deck-library/inbox/蓝色模板.pptx
+route: template-following
+palette:
+  primary_blue: "#005EA4"
+  cyan: "#039ACF"
+  white: "#FFFFFF"
+  dark_text: "#00467F"
+fonts:
+  title: 微软雅黑
+  body: 微软雅黑
+  template_secondary: 等线
+canvas: 1280x720
+rules:
+  - 保留模板源页的图片、几何形状、间距、页码与品牌色块。
+  - 只替换继承文本框中的经审核内容。
+  - 不新增覆盖模板内容的独立版式。

@@ -1,0 +1,49 @@
+slide_number: 14
+slide_id: slide-14
+page_type: single
+title: "OpenOA clean 微调结果"
+objective: "clean fine-tune evidence"
+key_message: "PatchTST full→clean 达到 clean test 当前最优"
+audience_takeaway: "PatchTST full→clean 达到 clean test 当前最优"
+content_blocks:
+  - "PatchTST full→clean 达到 clean test 当前最优"
+  - "正文由模板继承文本框确定性渲染，避免图片模型生成长段中文。"
+data_or_chart_requirements:
+  metric_ids: ["clean_test_windows", "patchtst_clean_speed_mae"]
+  chart_data: "none"
+visual:
+  - "仅沿用蓝色模板源页 9 的图片、几何形状、色彩与品牌留白。"
+  - "不新增覆盖模板内容的视觉元素。"
+layout:
+  canvas: "1280x720"
+  template_source_slide: 9
+  reuse_mode: duplicate-slide
+  text_overflow_policy: shorten_or_split
+visual_style:
+  palette: ["#005EA4", "#039ACF", "#FFFFFF", "#00467F"]
+  typeface: "微软雅黑 / 等线（继承模板）"
+image_prompt: "Template-following render from 蓝色模板.pptx source slide 9; preserve inherited imagery and chrome; do not generate exact Chinese text, numbers, tables, charts, logos, or screenshots with an image model."
+source_assets:
+  - "../../../skills/ppt-creaters/references/deck-library/inbox/蓝色模板.pptx"
+  - "../input/整合版PPT内容大纲.md"
+dependencies:
+  - "data/metrics.json"
+  - "data/tables.json"
+  - "speaker-notes/slide-14.md"
+font_roles:
+  title: title_px 48
+  body: body_px 30
+  chart_label: chart_label_px 26
+referenced_metrics: ["clean_test_windows", "patchtst_clean_speed_mae"]
+speaker_notes:
+  file: "speaker-notes/slide-14.md"
+acceptance_checks:
+  - "页面核心结论可在 5 秒内识别。"
+  - "模板图片与品牌色块未被替换。"
+  - "文字不裁切、不越界；正文视觉字号不低于 28px。"
+  - "关键数字只从 metrics.json 解析。"
+qa_checklist:
+  - preview_review_passed
+  - typography_checked
+  - source_numbers_checked
+  - template_fidelity_checked
