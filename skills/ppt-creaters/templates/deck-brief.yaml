@@ -1,0 +1,8 @@
+target_slide_count: 12
+presentation_goal: State the decision or action the audience should take.
+source_material: materials/source.md
+audience: technical-management
+use_case: formal-report
+language: zh-CN
+presentation_duration_minutes: 20
+output_directory: output/

@@ -1,0 +1,15 @@
+presentation_type: technical-report
+visual_style: technology-dark
+presentation_effect: keynote
+workflow_mode: manual
+selection_mode: guided
+output_mode: production-image
+notes_mode: full
+content_density: medium
+target_duration_minutes: 20
+language: zh-CN
+aspect_ratio: 16:9
+audience: technical-management
+style_confidence: 0.92
+classification_reason: >
+  Explain the classification using evidence from the source material.

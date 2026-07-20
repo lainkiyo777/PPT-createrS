@@ -1,0 +1,16 @@
+{
+  "slide_number": 1,
+  "page_type": "cover",
+  "title_area": {
+    "x": 120,
+    "y": 160,
+    "width": 1050,
+    "height": 260
+  },
+  "subtitle_area": {
+    "x": 120,
+    "y": 460,
+    "width": 800,
+    "height": 120
+  }
+}

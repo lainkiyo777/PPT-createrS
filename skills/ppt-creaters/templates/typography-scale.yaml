@@ -1,0 +1,37 @@
+canvas:
+  width: 1920
+  height: 1080
+
+font_roles:
+  cover_title:
+    min_px: 72
+    preferred_px: 84
+    max_px: 92
+  section_title:
+    min_px: 60
+    preferred_px: 68
+    max_px: 76
+  page_title:
+    min_px: 46
+    preferred_px: 52
+    max_px: 56
+  key_metric:
+    min_px: 48
+    preferred_px: 60
+    max_px: 72
+  group_title:
+    min_px: 32
+    preferred_px: 35
+    max_px: 38
+  body:
+    min_px: 28
+    preferred_px: 31
+    max_px: 34
+  chart_label:
+    min_px: 24
+    preferred_px: 26
+    max_px: 28
+  footnote:
+    min_px: 18
+    preferred_px: 20
+    max_px: 21

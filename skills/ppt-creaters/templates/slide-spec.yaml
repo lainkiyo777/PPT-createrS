@@ -1,0 +1,23 @@
+slide_number: 1
+page_type: cover
+title: Exact page title
+key_message: One sentence that the audience must remember.
+font_roles:
+  title: cover_title
+  body: body
+  metrics: key_metric
+layout:
+  structure: hero
+visual:
+  style: technology-dark
+  effect: keynote
+image_prompt: Describe the complete slide composition and exact visual treatment.
+source_assets: []
+referenced_metrics: []
+speaker_notes:
+  file: ../speaker-notes/slide-01.md
+qa_checklist:
+  - title_not_overflow
+  - body_font_above_minimum
+  - metrics_match_source
+  - notes_present

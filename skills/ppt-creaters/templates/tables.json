@@ -1,0 +1,7 @@
+{
+  "table_id": {
+    "columns": ["column_a", "column_b"],
+    "rows": [["value_a", "value_b"]],
+    "source": "source-file"
+  }
+}

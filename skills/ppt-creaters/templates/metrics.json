@@ -1,0 +1,9 @@
+{
+  "metric_id": {
+    "value": 0,
+    "unit": "unit",
+    "precision": 2,
+    "source": "source-file",
+    "slides": [1]
+  }
+}
