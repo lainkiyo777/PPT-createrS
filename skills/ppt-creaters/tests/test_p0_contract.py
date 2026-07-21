@@ -27,7 +27,7 @@ def build_valid_deck(root: Path, output_mode: str = "production-image") -> None:
     config = "\n".join([
         "presentation_type: technical-report", "visual_style: technology-dark",
         "presentation_effect: keynote", "workflow_mode: manual",
-        "selection_mode: guided", f"output_mode: {output_mode}",
+        "selection_mode: guided", "template_application_mode: style-reference", f"output_mode: {output_mode}",
         "notes_mode: full", "content_density: medium",
         "target_duration_minutes: 2", "language: zh-CN", "aspect_ratio: 16:9",
         "audience: technical-management", "style_confidence: 0.92",
@@ -61,8 +61,8 @@ def build_valid_deck(root: Path, output_mode: str = "production-image") -> None:
     for number in (1, 2):
         spec = "\n".join([
             f"slide_number: {number}", "page_type: content", f"title: Slide {number}",
-            f"key_message: Message {number}", "font_roles:", "  title: page_title", "  body: body",
-            "layout:", "  structure: content", "visual:", "  style: technology-dark", "  effect: keynote",
+            f"key_message: Message {number}", "template_application_mode: style-reference", "dominant_visual: chart or scene", "layout_flexibility: recompose; move; resize; add chart", "visual_inheritance: blue/cyan palette and Chinese sans hierarchy", "prohibited_inheritance: source text and fixed source textbox coordinates", "font_roles:", "  title: page_title", "  body: body",
+            "layout:", "  structure: content", "  reuse_mode: new-composition", "visual_style:", "  profile: style-reference", "visual:", "  style: technology-dark", "  effect: keynote",
             "source_assets: []", "image_prompt: deterministic image prompt", "referenced_metrics:", "  - prediction_horizons",
             f"speaker_notes:", f"  file: ../speaker-notes/slide-{number:02d}.md", "qa_checklist:",
             "  - title_not_overflow", "",

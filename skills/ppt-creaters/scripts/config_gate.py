@@ -21,6 +21,7 @@ CONFIRM_FIELDS = (
     "presentation_effect",
     "workflow_mode",
     "selection_mode",
+    "template_application_mode",
     "output_mode",
     "notes_mode",
     "target_duration_minutes",
@@ -42,6 +43,7 @@ OPTIONS: dict[str, tuple[Any, ...]] = {
     ),
     "workflow_mode": ("auto", "manual"),
     "selection_mode": ("direct", "guided"),
+    "template_application_mode": ("style-reference", "adaptive-layout", "strict-template"),
     "output_mode": ("production-image", "hybrid-editable", "background-only"),
     "notes_mode": ("none", "summary", "full"),
     "target_duration_minutes": (10, 15, 20, 30, 45),
@@ -316,7 +318,11 @@ def run_gate(
 
     confirmed_path = output_dir / "deck-config.confirmed.yaml"
     if workflow_mode == "auto":
+        # Missing mode is a deliberate default, never a strict-template inference.
+        config.setdefault("template_application_mode", "style-reference")
         errors = _validate_required_config(config)
+        if config.get("template_application_mode") == "strict-template":
+            errors.append("strict-template requires an explicit user choice and cannot be auto-inferred")
         if errors:
             message = "; ".join(errors)
             _write_state(output_dir, "failed", message)
@@ -337,6 +343,7 @@ def run_gate(
                 _write_report(output_dir, "awaiting_configuration", message)
                 return GateResult("awaiting_configuration", message)
             config = resolved
+            config["template_application_mode_selected_by"] = "user"
         else:
             required = set(CONFIRM_FIELDS)
             provided = set(explicit_fields or ())
@@ -354,6 +361,8 @@ def run_gate(
                 return GateResult("failed", message)
             config = dict(config)
             config["user_provided_fields"] = ",".join(sorted(set(explicit_fields or ())))
+            if "template_application_mode" in set(explicit_fields or ()):
+                config["template_application_mode_selected_by"] = "user"
         confirmed_path = _write_confirmed_config(output_dir, config, "user_confirmed")
 
     if workflow_mode == "manual":

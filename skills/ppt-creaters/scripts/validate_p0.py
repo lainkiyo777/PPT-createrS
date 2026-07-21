@@ -16,6 +16,7 @@ CONFIG_ENUMS = {
     "presentation_effect": {"keynote", "formal-report", "academic", "storytelling", "dashboard", "documentary", "minimal"},
     "workflow_mode": {"auto", "manual"},
     "selection_mode": {"direct", "guided"},
+    "template_application_mode": {"style-reference", "adaptive-layout", "strict-template"},
     "output_mode": {"production-image", "hybrid-editable", "background-only"},
     "notes_mode": {"none", "summary", "full"},
     "content_density": {"low", "medium", "high"},
@@ -25,13 +26,14 @@ CONFIG_REQUIRED = tuple(CONFIG_ENUMS) + (
 )
 SPEC_REQUIRED = (
     "slide_number", "page_type", "title", "key_message", "font_roles", "layout", "visual",
+    "template_application_mode", "dominant_visual", "layout_flexibility", "visual_inheritance", "prohibited_inheritance",
     "source_assets", "referenced_metrics", "image_prompt", "speaker_notes", "qa_checklist",
 )
 TYPOGRAPHY_MINIMUMS = {"body": 28, "chart_label": 24, "footnote": 18}
 TEMPLATE_PROFILE_REQUIRED = (
-    "color_palette", "typography_scale", "page_families", "layout_patterns",
-    "title_positions", "content_density", "chart_style", "decoration_rules",
-    "unsuitable_usage",
+    "color_palette", "typography", "spacing", "composition_language",
+    "image_treatment", "chart_style", "icon_style", "page_rhythm",
+    "layout_principles", "prohibited_behaviors",
 )
 
 
@@ -172,6 +174,12 @@ def _check_selection_gate(root: Path, values: dict[str, str], errors: list[str])
     else:
         confirmed = _mapping_file(confirmed_path, errors)
         method = str(confirmed.get("confirmation_method", ""))
+        mode = values.get("template_application_mode", "style-reference")
+        if mode == "strict-template":
+            selected_by = str(confirmed.get("template_application_mode_selected_by", ""))
+            provided = {item.strip() for item in str(confirmed.get("user_provided_fields", "")).split(",") if item.strip()}
+            if method == "auto_inference" or not (selected_by == "user" or "template_application_mode" in provided):
+                errors.append("strict-template requires explicit user selection; upload or AI inference is not enough.")
         workflow = values.get("workflow_mode")
         selection = values.get("selection_mode")
         if workflow == "auto":
@@ -184,12 +192,12 @@ def _check_selection_gate(root: Path, values: dict[str, str], errors: list[str])
         else:
             if method != "user_confirmed":
                 errors.append("manual/direct mode requires confirmation_method: user_confirmed.")
-            for field in ("presentation_type", "visual_style", "presentation_effect", "workflow_mode", "output_mode", "notes_mode", "target_duration_minutes", "content_density"):
+            for field in ("presentation_type", "visual_style", "presentation_effect", "workflow_mode", "template_application_mode", "output_mode", "notes_mode", "target_duration_minutes", "content_density"):
                 if field not in confirmed:
                     errors.append(f"deck-config.confirmed.yaml is missing confirmed field {field}.")
             if selection == "direct":
                 provided = {item.strip() for item in str(confirmed.get("user_provided_fields", "")).split(",") if item.strip()}
-                required = {"presentation_type", "visual_style", "presentation_effect", "workflow_mode", "selection_mode", "output_mode", "notes_mode", "target_duration_minutes", "content_density"}
+                required = {"presentation_type", "visual_style", "presentation_effect", "workflow_mode", "selection_mode", "template_application_mode", "output_mode", "notes_mode", "target_duration_minutes", "content_density"}
                 missing = sorted(required - provided)
                 if missing:
                     errors.append("direct mode confirmation is missing explicit user fields: " + ", ".join(missing) + ".")
@@ -321,6 +329,15 @@ def _check_specs_and_data(root: Path, slide_count: int, errors: list[str]) -> tu
         for field in SPEC_REQUIRED:
             if not _has_key(text, field):
                 errors.append(f"{path.name} is missing required field {field}.")
+        mode = _scalar(text, "template_application_mode") or "style-reference"
+        flexibility = (_scalar(text, "layout_flexibility") or "").lower()
+        reuse_mode = (_scalar(text, "reuse_mode") or "").lower()
+        if mode == "style-reference" and reuse_mode == "duplicate-slide":
+            errors.append(f"{path.name} style-reference cannot use duplicate-slide.")
+        if mode == "style-reference" and ("fixed-source-textbox" in flexibility or flexibility.strip() == "fixed"):
+            errors.append(f"{path.name} source textboxes cannot fix layout flexibility.")
+        if mode == "style-reference" and (_scalar(text, "content_density") or "").lower() == "over-capacity" and not any(token in flexibility for token in ("recompose", "split", "add", "resize")):
+            errors.append(f"{path.name} over-capacity content requires recompose or split.")
         for metric in _block_items(text, "referenced_metrics"):
             referenced.add(metric)
             if metric not in known_metrics:

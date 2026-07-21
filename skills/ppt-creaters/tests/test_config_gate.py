@@ -36,6 +36,7 @@ def base_config(workflow_mode="manual", selection_mode="guided"):
         "presentation_effect": "formal-report",
         "workflow_mode": workflow_mode,
         "selection_mode": selection_mode,
+        "template_application_mode": "style-reference",
         "output_mode": "production-image",
         "notes_mode": "full",
         "target_duration_minutes": 20,
@@ -123,6 +124,14 @@ class ConfigGateTests(unittest.TestCase):
         self.assertEqual("awaiting_configuration", result.status)
         self.assertFalse((self.output / "deck-config.confirmed.yaml").exists())
 
+    def test_auto_mode_cannot_infer_strict_template(self):
+        gate = load_gate()
+        config = base_config(workflow_mode="auto", selection_mode="direct")
+        config["template_application_mode"] = "strict-template"
+        result = gate.run_gate(self.output, config, input_fn=lambda _: self.fail("auto must not prompt"), output_fn=lambda _: None)
+        self.assertEqual("failed", result.status)
+        self.assertIn("strict-template", result.message)
+
     def test_auto_mode_records_inference_without_prompt(self):
         gate = load_gate()
         config = base_config(workflow_mode="auto", selection_mode="direct")
@@ -148,7 +157,7 @@ class ConfigGateTests(unittest.TestCase):
 
     def test_guided_confirmation_writes_confirmed_config(self):
         gate = load_gate()
-        values = ["2", "3", "2", "2", "2", "1", "3", "3", "2", "yes"]
+        values = ["2", "3", "2", "2", "2", "1", "1", "3", "3", "2", "yes"]
         make_candidates(self.output)
         result = gate.run_gate(self.output, base_config(), input_fn=iter(values).__next__, output_fn=lambda _: None)
         self.assertEqual("awaiting_style_selection", result.status)

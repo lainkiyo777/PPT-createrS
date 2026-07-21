@@ -12,6 +12,7 @@ visual_style: technology-dark
 presentation_effect: keynote
 workflow_mode: manual
 selection_mode: guided
+template_application_mode: style-reference
 output_mode: production-image
 notes_mode: full
 content_density: medium
@@ -44,19 +45,22 @@ When `deck-config.yaml` contains `template_source`, it must also contain `templa
 references/deck-library/profiles/<template-name>/style-profile.yaml
 ```
 
-`<template-name>` is the imported PPTX filename without its extension. The profile must be created before style candidates, slide specs, previews, or final images. It must contain all of these top-level sections:
+`<template-name>` is the imported PPTX filename without its extension. The profile must be created before style candidates, slide specs, previews, or final images. It is a style profile, not a source-slide coordinate map, and must contain:
 
 ```yaml
 color_palette: {}
-typography_scale: {}
-page_families: {}
-layout_patterns: {}
-title_positions: {}
-content_density: {}
+typography: {}
+spacing: {}
+composition_language: {}
+image_treatment: {}
 chart_style: {}
-decoration_rules: {}
-unsuitable_usage: []
+icon_style: {}
+page_rhythm: {}
+layout_principles: []
+prohibited_behaviors: []
 ```
+
+Coordinates, duplicate-slide mappings, and inherited text boxes are optional observations only; they are not the profile's design contract.
 
 The profile must describe observed template behavior and constraints, not merely repeat a screenshot, a background filename, or a palette. A missing `template_profile`, missing profile file, wrong profile path, or missing section is a hard failure. The existing deck must not proceed to page generation while this gate fails.
 
@@ -71,6 +75,7 @@ presentation_type
 visual_style
 presentation_effect
 workflow_mode
+template_application_mode
 output_mode
 notes_mode
 target_duration_minutes
@@ -102,6 +107,16 @@ candidate_profile_path: style-candidates/candidate-b/style-profile.yaml
 
 `selected_by: ai`, missing confirmation metadata, or an uploaded template must never satisfy this gate. `workflow_mode: auto` may skip prompting only when `deck-config.confirmed.yaml` records `confirmation_method: auto_inference` and the selection report records the inferred values. `selection_mode: direct` requires proof that every required field was explicitly provided by the user.
 
+## Template application mode
+
+`template_application_mode` defaults to `style-reference` and must be resolved before page generation.
+
+- `style-reference`: inherit colors, font language, whitespace, shapes, icons, image treatment, chart language, and visual rhythm. Do not duplicate source slides or bind source textbox coordinates. Recompose every page from its semantic content and continue the image-first flow.
+- `adaptive-layout`: reference page families and broad composition only. Move, resize, delete, and add text boxes; change columns, cards, image ratios; and add charts, flows, arrows, nodes, or architecture structures. Content semantics outrank template fidelity.
+- `strict-template`: enable only when the user explicitly selects strict brand-template use. Only this mode may use duplicate-slide and inherited text boxes as the primary strategy. It is never the default, and an uploaded PPTX is not confirmation.
+
+A confirmed strict choice must record `template_application_mode_selected_by: user` or an explicit user field in `deck-config.confirmed.yaml`.
+
 ## Manual selection Gate
 
 Manual mode requires:
@@ -119,6 +134,10 @@ selected-style.yaml
 ```
 
 There must be 2–4 candidates. The user confirmation is represented by `selected-style.yaml`; formal page generation is blocked until it exists. Auto or direct mode can skip this gate only when their parameters are already resolved.
+
+## Style-reference image-first rule
+
+In `style-reference`, generate independent slide specs from the outline, choose a `dominant_visual` for each page, and build prompts from the style profile plus approved template preview references. Preview images must be reviewed before `final-images`. The model may generate backgrounds, composition, decorative geometry, and scene imagery; exact Chinese, key numbers, tables, and charts must be deterministic overlays or code-rendered assets.
 
 ## Typography
 
@@ -171,13 +190,24 @@ font_roles:
 layout:
   structure: horizontal-process
   columns: 4
+  reuse_mode: new-composition
+visual_style:
+  profile: references/deck-library/profiles/<template-name>/style-profile.yaml
+  semantic_override: content chooses composition
 visual:
   style: technology-dark
   effect: keynote
   glow_level: medium
   contrast_level: dramatic
-image_prompt: Describe the complete visual composition with exact image constraints.
+image_prompt: >-
+  Learn the imported template's visual language and approved preview references;
+  do not copy source Chinese, source text, or exact textbox layout. Recompose the
+  scene for this page's semantics. The image model owns background, composition,
+  decoration, and scene imagery; deterministic code owns exact Chinese, numbers,
+  tables, and chart labels.
+source_slide_reference: null
 source_assets: []
+dependencies: []
 referenced_metrics:
   - prediction_horizons
 speaker_notes:

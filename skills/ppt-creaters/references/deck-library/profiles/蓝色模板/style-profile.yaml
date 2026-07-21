@@ -1,175 +1,84 @@
-profile_version: "1.0"
+profile_version: "2.0"
 template_name: "蓝色模板"
-source_template: ../../inbox/蓝色模板.pptx
+source_template: "蓝色模板.pptx"
+application_default: style-reference
 canvas:
-  width: 1280
-  height: 720
   aspect_ratio: "16:9"
+  width: 1920
+  height: 1080
 audit_evidence:
   source_slide_count: 11
   extracted_media_count: 7
-  native_chart_count: 0
-  native_table_slide_count: 0
-  observed_font_families:
-    - 微软雅黑
-    - 等线
-    - 思源黑体 CN Regular
-    - 思源黑体 CN Bold
   evidence: template-inspect/template-manifest.json and rendered source-slide previews
   interpretation: >-
-    The source deck is a blue geometric template with photographic cover assets,
-    repeated card and process families, and no native chart or table slides.
+    The deck is a blue geometric visual language with photographic cover assets,
+    restrained cyan accents, generous safe margins, and a clear cover-to-evidence rhythm.
 color_palette:
   primary_blue: "#005EA4"
   accent_cyan: "#039ACF"
-  dark_text: "#00467F"
+  deep_blue: "#00467F"
   white: "#FFFFFF"
-  black: "#000000"
+  text_on_light: "#16324F"
   usage: >-
-    Use primary blue for anchors and section bars, cyan only for emphasis,
-    dark text on white content fields, and white on blue or photographic cover areas.
-typography_scale:
-  source_families:
-    primary: 微软雅黑
-    secondary: 等线
-  roles:
-    cover_title:
-      recommended_px: "48-64"
-      max_lines: 1
-      weight: bold
-    section_title:
-      recommended_px: "40-52"
-      max_lines: 2
-      weight: bold
-    page_title:
-      recommended_px: "34-46"
-      max_lines: 2
-      weight: bold
-    key_metric:
-      recommended_px: "32-52"
-      max_lines: 1
-      weight: bold
-    body:
-      recommended_px: "24-30"
-      max_lines: 4
-      weight: regular
-    chart_label:
-      recommended_px: "22-26"
-      max_lines: 2
-      weight: regular
-  rule: >-
-    Keep title and body roles distinct; never force dense evidence into a source
-    textbox whose inherited size makes the body visually secondary to decoration.
-page_families:
-  cover:
-    source_slides: [1]
-    purpose: opening or closing thesis with one dominant photographic/brand field
-    capacity: one title, one thesis line, one metadata line
-  contents:
-    source_slides: [2]
-    purpose: narrative map
-    capacity: four to six short section labels
-  section_divider:
-    source_slides: [3]
-    purpose: transition into a major chapter
-    capacity: chapter number, chapter title, one sentence, optional focal visual
-  evidence_cards:
-    source_slides: [4]
-    purpose: facts, definitions, or dataset profile
-    capacity: three to four cards, one metric or short statement per card
-  timeline_or_sequence:
-    source_slides: [5]
-    purpose: chronology, workflow, or horizon sequence
-    capacity: three to five ordered milestones; not a generic comparison grid
-  architecture_cards:
-    source_slides: [6]
-    purpose: system, model, or handoff architecture
-    capacity: three to four modules plus arrows or explicit inputs/outputs
-  data_dashboard:
-    source_slides: [7]
-    purpose: dense evidence and quality checks
-    capacity: at most four evidence blocks plus one dominant chart or callout
-  five_step_process:
-    source_slides: [8]
-    purpose: five-stage method or ablation factors
-    capacity: five short steps with one highlighted conclusion
-  focal_result:
-    source_slides: [9]
-    purpose: one result, one comparison, or one clean-test conclusion
-    capacity: one chart/metric, one interpretation, one source note
-  summary_and_action:
-    source_slides: [10]
-    purpose: conclusion, decision, or next-step plan
-    capacity: three actions or conclusions with one priority
-  closing:
-    source_slides: [11]
-    purpose: closing statement and contact/next action
-    capacity: one statement; do not reuse the cover unless the profile explicitly approves it
-layout_patterns:
-  asymmetric_cover: left-aligned title over a large photo with blue geometric anchors
-  section_band: short title block paired with a large number and a controlled empty field
-  card_grid: repeated cards with equal gutters and one reading order
-  process_sequence: ordered milestones with a visible direction or handoff
-  architecture_flow: modules connected by input/output arrows, not isolated text columns
-  evidence_dashboard: one dominant evidence area plus bounded supporting callouts
-  focal_result: chart or metric owns the visual center with concise interpretation nearby
-  summary_actions: three-column or stepped action structure with a clear priority
-  rule: >-
-    Select a pattern by content semantics. Do not copy a source slide solely because
-    its color or background looks convenient.
-title_positions:
-  cover: left-center within the photographic safe area; keep the title as one phrase
-  contents: upper-left title with section labels aligned to the template's reading axis
-  section_divider: upper-left or left-center beside the chapter number
-  content: upper-left page title above the content field with a consistent baseline
-  focal_result: upper-left title; reserve the center for the chart or metric
-  summary_and_action: upper-left title; keep the action hierarchy below it
-content_density:
-  low:
-    max_primary_messages: 1
-    max_supporting_blocks: 2
-    use_for: cover, section_divider, focal_result, closing
-  medium:
-    max_primary_messages: 1
-    max_supporting_blocks: 4
-    use_for: evidence_cards, timeline_or_sequence, architecture_cards, summary_and_action
-  high:
-    max_primary_messages: 1
-    max_supporting_blocks: 4
-    required_visual_anchor: true
-    use_for: data_dashboard and quantitative comparison pages only
-  prohibition: >-
-    Do not fill every inherited textbox. If a page exceeds the family capacity,
-    split the narrative or choose another family.
+    Anchor titles, bands, rules, and key metrics in blue; use cyan for emphasis and
+    connectors; use white or very light fields for dense evidence and charts.
+typography:
+  families:
+    primary: "Chinese sans-serif"
+    secondary: "DengXian or Microsoft YaHei"
+    fallback: "Arial Unicode MS"
+  language: "Chinese sans-serif"
+  scale:
+    cover_title: "72-92 px, bold, one phrase when possible"
+    section_title: "60-76 px, bold"
+    page_title: "46-56 px, bold"
+    key_metric: "48-72 px, bold"
+    body: "28-34 px, regular"
+    chart_label: "24-28 px, regular"
+    footnote: "18-21 px, regular"
+spacing:
+  safe_margin: "6% of canvas on all sides"
+  title_to_content: "24-40 px"
+  card_gutter: "20-32 px"
+  density_rule: "Preserve whitespace around the dominant visual; split when content exceeds readable capacity."
+composition_language:
+  principles:
+    - "Asymmetric balance with one clear visual anchor"
+    - "Blue structural geometry framing a white or photographic field"
+    - "Strong left-to-right reading axis with deliberate empty space"
+    - "Content semantics choose the composition; source pages are inspiration only"
+  allowed_recomposition:
+    - "Move, resize, delete, or add text containers"
+    - "Change column count, card count, image ratio, chart size, and hierarchy"
+    - "Add nodes, arrows, axes, callouts, and code or data diagrams"
+image_treatment:
+  photography: "Crisp wind, infrastructure, or field imagery with blue-toned grading and controlled crop"
+  diagrams: "Flat, clean geometry with blue/cyan connectors and high contrast"
+  generation_rule: "Use the profile and approved template previews as style references, never as source-page copies"
 chart_style:
-  native_chart_in_source: false
-  visual_language: >-
-    Use clean blue/cyan charts on white fields, one dominant chart per page,
-    direct labels where possible, restrained gridlines, and a visible source note.
-  required_for: >-
-    Any page whose key message compares models, shows a distribution, explains a
-    trend, or claims an improvement must include a chart, diagram, or explicit data visual.
-  prohibited: >-
-    Do not replace a required chart with a row of text cards or a decorative template image.
-decoration_rules:
-  preserve:
-    - blue geometric anchors
-    - photographic cover assets
-    - brand logo and source icons when supplied
-    - template-safe margins and aspect ratio
-  adapt:
-    - crop only decorative imagery, never data or logos
-    - recolor only within the profile palette
-    - reduce decoration when it competes with a chart or key metric
-  do_not:
-    - layer unrelated glow, neon, or tech-grid effects over the template
-    - use template geometry as a substitute for arrows, axes, or evidence
-    - place long paragraphs in decorative title fields
-unsuitable_usage:
-  - Do not use the cover family for ordinary content pages.
-  - Do not use the timeline family for a model comparison unless the content is genuinely sequential.
-  - Do not use the architecture family as four unrelated text columns; it needs explicit relationships.
-  - Do not use the data dashboard family without a dominant chart, distribution, or evidence visual.
-  - Do not use inherited small text boxes for long Chinese paragraphs or multi-row tables.
-  - Do not duplicate one source slide across several pages without changing the composition and visual anchor.
-  - Do not flatten the template into a background and call the result template-following.
+  visual_language: "Clean blue/cyan charts on light fields, restrained gridlines, direct labels, one dominant chart"
+  comparison: "Use direct labels and a visible baseline or delta"
+  architecture: "Use explicit nodes, arrows, inputs, and outputs"
+  deterministic_text: "Render exact Chinese, numbers, tables, and chart labels with code"
+icon_style:
+  language: "Simple line or solid geometric icons, consistent stroke weight, blue/cyan accents"
+  rule: "Keep icons subordinate to the page message and preserve supplied brand icons when present"
+page_rhythm:
+  sequence: "cover -> section -> evidence -> method or architecture -> result -> conclusion"
+  pacing: "Alternate high-information evidence with lower-density transition or thesis pages"
+  repetition: "Reuse the visual language, not identical source compositions"
+layout_principles:
+  - "Select a page family by semantic role, then design a new composition"
+  - "Use title safe areas and consistent baselines without binding source textbox coordinates"
+  - "Let chart, architecture, or scene own the center when it carries the conclusion"
+  - "If content exceeds template capacity, recompose or split instead of shrinking type"
+  - "Keep all pages 16:9 and maintain the same style-profile inheritance"
+prohibited_behaviors:
+  - "Do not duplicate source slides as the default"
+  - "Do not copy source Chinese, source text, or exact textbox geometry"
+  - "Do not treat the template as a background image only"
+  - "Do not force body copy into inherited small boxes"
+  - "Do not replace a required chart with decorative cards"
+  - "Do not enable strict-template without explicit user confirmation"
+  - "Do not infer strict-template from an uploaded PPTX"
+  - "Do not let template fidelity outrank content semantics"

@@ -1,0 +1,6 @@
+GREEN phase: after implementation
+Command: python -m unittest skills.ppt-creaters.tests.test_template_application_mode
+Result: PASS
+Ran: 10 tests
+Failures: 0
+The policy now validates style-reference, adaptive-layout compatibility, strict-template user confirmation, new compositions, semantic chart/architecture additions, and over-capacity recompose-or-split behavior.
