@@ -36,9 +36,75 @@ audience: technical-management
 use_case: formal-report
 ```
 
+## Imported template profile gate
+
+When `deck-config.yaml` contains `template_source`, it must also contain `template_profile`. The profile path is deterministic:
+
+```text
+references/deck-library/profiles/<template-name>/style-profile.yaml
+```
+
+`<template-name>` is the imported PPTX filename without its extension. The profile must be created before style candidates, slide specs, previews, or final images. It must contain all of these top-level sections:
+
+```yaml
+color_palette: {}
+typography_scale: {}
+page_families: {}
+layout_patterns: {}
+title_positions: {}
+content_density: {}
+chart_style: {}
+decoration_rules: {}
+unsuitable_usage: []
+```
+
+The profile must describe observed template behavior and constraints, not merely repeat a screenshot, a background filename, or a palette. A missing `template_profile`, missing profile file, wrong profile path, or missing section is a hard failure. The existing deck must not proceed to page generation while this gate fails.
+
+## P0-A configuration and interaction gate
+
+`deck-config.confirmed.yaml` is required before outline, slide specs, previews, final images, or PPTX. The gate is implemented by `scripts/config_gate.py` and records machine state in `build-status.json`.
+
+For `selection_mode: guided`, the gate must display numbered choices for these fields and wait for explicit user confirmation:
+
+```text
+presentation_type
+visual_style
+presentation_effect
+workflow_mode
+output_mode
+notes_mode
+target_duration_minutes
+content_density
+```
+
+If no confirmation is received, the only valid state is:
+
+```text
+build_status: awaiting_configuration
+```
+
+A GUI selector is optional. A numbered text prompt is the required fallback. Recommendations may be displayed but cannot be accepted automatically.
+
+For `workflow_mode: manual`, the gate must validate 2 to 4 candidate directories, each containing `cover.png`, `section.png`, `content.png`, `result.png`, and `style-profile.yaml`. It then waits for a user choice. Before that choice the only valid state is:
+
+```text
+build_status: awaiting_style_selection
+```
+
+Only a user choice may create `selected-style.yaml`, which must include:
+
+```yaml
+selected_candidate: candidate-b
+selected_by: user
+confirmation_timestamp: 2026-07-21T00:00:00+00:00
+candidate_profile_path: style-candidates/candidate-b/style-profile.yaml
+```
+
+`selected_by: ai`, missing confirmation metadata, or an uploaded template must never satisfy this gate. `workflow_mode: auto` may skip prompting only when `deck-config.confirmed.yaml` records `confirmation_method: auto_inference` and the selection report records the inferred values. `selection_mode: direct` requires proof that every required field was explicitly provided by the user.
+
 ## Manual selection Gate
 
-Manual + guided mode requires:
+Manual mode requires:
 
 ```text
 style-candidates/

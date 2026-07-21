@@ -34,8 +34,15 @@ def build_valid_deck(root: Path, output_mode: str = "production-image") -> None:
         "classification_reason: 技术报告配置", "",
     ])
     write(root / "deck-config.yaml", config)
+    write(root / "deck-config.confirmed.yaml", config + "confirmation_method: user_confirmed\n")
     write(root / "deck-brief.yaml", "target_slide_count: 2\npresentation_goal: test\n")
-    write(root / "selected-style.yaml", "style_id: candidate-a\n")
+    write(root / "selected-style.yaml", "\n".join([
+        "selected_candidate: candidate-a",
+        "selected_by: user",
+        "confirmation_timestamp: 2026-07-21T00:00:00+00:00",
+        "candidate_profile_path: style-candidates/candidate-a/style-profile.yaml",
+        "",
+    ]))
     for candidate in ("candidate-a", "candidate-b"):
         for filename in ("style-profile.yaml", "cover.png", "section.png", "content.png", "result.png"):
             write(root / "style-candidates" / candidate / filename, "x")
