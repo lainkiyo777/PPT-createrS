@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PPT Slide Specification",
+  "type": "object",
+  "required": [
+    "slide_number",
+    "page_type",
+    "key_message",
+    "dominant_visual",
+    "template_application_mode",
+    "style_reference_prompt",
+    "image_prompt",
+    "reference_images",
+    "layout_flexibility",
+    "visual_inheritance",
+    "prohibited_inheritance",
+    "deterministic_text_overlay",
+    "deterministic_chart_overlay",
+    "referenced_metrics",
+    "speaker_notes_path",
+    "qa_checklist"
+  ],
+  "properties": {
+    "slide_number": {"type": "integer", "minimum": 1},
+    "page_type": {"type": "string", "minLength": 1},
+    "key_message": {"type": "string", "minLength": 1},
+    "dominant_visual": {"type": "string", "minLength": 1},
+    "template_application_mode": {"enum": ["style-reference", "adaptive-layout", "strict-template"]},
+    "style_reference_prompt": {"type": "string", "minLength": 1},
+    "image_prompt": {"type": "string", "minLength": 1},
+    "reference_images": {"type": "array", "minItems": 1},
+    "layout_flexibility": {"type": "string", "minLength": 1},
+    "visual_inheritance": {"type": "string", "minLength": 1},
+    "prohibited_inheritance": {"type": "string", "minLength": 1},
+    "deterministic_text_overlay": {},
+    "deterministic_chart_overlay": {},
+    "referenced_metrics": {"type": "array"},
+    "speaker_notes_path": {"type": "string", "minLength": 1},
+    "qa_checklist": {"type": "array", "minItems": 1}
+  }
+}

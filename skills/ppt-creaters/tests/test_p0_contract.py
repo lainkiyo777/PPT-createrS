@@ -3,7 +3,9 @@ import json
 import shutil
 import unittest
 import uuid
+import zipfile
 from pathlib import Path
+from xml.sax.saxutils import escape
 
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
@@ -23,6 +25,40 @@ def write(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
+def write_image_pptx_with_notes(path: Path, notes: list[str]) -> None:
+    presentation = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">'
+        '<p:sldSz cx="12192000" cy="6858000"/></p:presentation>'
+    )
+    with zipfile.ZipFile(path, "w") as archive:
+        archive.writestr("ppt/presentation.xml", presentation)
+        for number, note in enumerate(notes, start=1):
+            archive.writestr(
+                f"ppt/slides/slide{number}.xml",
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
+                'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
+                '<p:cSld><p:spTree><p:nvGrpSpPr/><p:grpSpPr/><p:pic><p:spPr><a:xfrm>'
+                '<a:off x="0" y="0"/><a:ext cx="12192000" cy="6858000"/>'
+                '</a:xfrm></p:spPr></p:pic></p:spTree></p:cSld></p:sld>',
+            )
+            archive.writestr(
+                f"ppt/slides/_rels/slide{number}.xml.rels",
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                f'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" Target="../notesSlides/notesSlide{number}.xml"/>'
+                '</Relationships>',
+            )
+            archive.writestr(
+                f"ppt/notesSlides/notesSlide{number}.xml",
+                '<?xml version="1.0" encoding="UTF-8"?>'
+                '<p:notes xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" '
+                'xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'
+                f'<p:cSld><p:spTree><p:sp><p:txBody><a:p><a:r><a:t>{escape(note)}</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:notes>',
+            )
+
+
 def build_valid_deck(root: Path, output_mode: str = "production-image") -> None:
     config = "\n".join([
         "presentation_type: technical-report", "visual_style: technology-dark",
@@ -34,18 +70,47 @@ def build_valid_deck(root: Path, output_mode: str = "production-image") -> None:
         "classification_reason: 技术报告配置", "",
     ])
     write(root / "deck-config.yaml", config)
-    write(root / "deck-config.confirmed.yaml", config + "confirmation_method: user_confirmed\n")
+    configuration_source = json.dumps({
+        "presentation_type": "user", "visual_style": "user", "presentation_effect": "user",
+        "template_application_mode": "user", "output_mode": "user", "notes_mode": "user",
+        "target_duration_minutes": "user", "content_density": "user",
+    })
+    write(root / "deck-config.confirmed.yaml", config + f"confirmation_method: user_confirmed\nconfirmed_by: user\nconfiguration_source: {configuration_source}\n")
     write(root / "deck-brief.yaml", "target_slide_count: 2\npresentation_goal: test\n")
+    write(root / "build-state.yaml", json.dumps({
+        "build_status": "completed",
+        "transition_history": [{
+            "from": "final_qa", "to": "completed", "actor": "orchestrator",
+            "evidence_files": ["reviews/round-01/gate-decision.json"],
+        }],
+    }))
     write(root / "selected-style.yaml", "\n".join([
         "selected_candidate: candidate-a",
         "selected_by: user",
         "confirmation_timestamp: 2026-07-21T00:00:00+00:00",
         "candidate_profile_path: style-candidates/candidate-a/style-profile.yaml",
+        "template_profile: references/deck-library/profiles/blue/style-profile.yaml",
         "",
     ]))
-    for candidate in ("candidate-a", "candidate-b"):
+    manifest_calls = []
+    for candidate in ("candidate-a", "candidate-b", "candidate-c"):
         for filename in ("style-profile.yaml", "cover.png", "section.png", "content.png", "result.png"):
             write(root / "style-candidates" / candidate / filename, "x")
+        for filename in ("cover.png", "section.png", "content.png", "result.png"):
+            prompt = root / "style-candidates" / candidate / "prompts" / filename.replace(".png", ".txt")
+            write(prompt, "prompt")
+            manifest_calls.append({
+                "tool_name": "image2",
+                "model_or_tool_version": "test-image2-v1",
+                "prompt_path": prompt.relative_to(root).as_posix(),
+                "reference_images": ["blue-template.png"],
+                "output_path": (root / "style-candidates" / candidate / filename).relative_to(root).as_posix(),
+                "timestamp": "2026-07-21T00:00:00+00:00",
+                "success": True,
+                "error": None,
+                "status": "success",
+            })
+    write(root / "image-generation-manifest.json", json.dumps({"calls": manifest_calls}))
     typography = "\n".join([
         "canvas:", "  width: 1920", "  height: 1080", "font_roles:",
         "  body:", "    min_px: 28", "    preferred_px: 31", "    max_px: 34",
@@ -63,7 +128,13 @@ def build_valid_deck(root: Path, output_mode: str = "production-image") -> None:
             f"slide_number: {number}", "page_type: content", f"title: Slide {number}",
             f"key_message: Message {number}", "template_application_mode: style-reference", "dominant_visual: chart or scene", "layout_flexibility: recompose; move; resize; add chart", "visual_inheritance: blue/cyan palette and Chinese sans hierarchy", "prohibited_inheritance: source text and fixed source textbox coordinates", "font_roles:", "  title: page_title", "  body: body",
             "layout:", "  structure: content", "  reuse_mode: new-composition", "visual_style:", "  profile: style-reference", "visual:", "  style: technology-dark", "  effect: keynote",
-            "source_assets: []", "image_prompt: deterministic image prompt", "referenced_metrics:", "  - prediction_horizons",
+            "source_assets: []", "image_prompt: deterministic image prompt",
+            "style_reference_prompt: learn blue template visual language and recompose",
+            "reference_images:", "  - blue-template.png",
+            "deterministic_text_overlay: exact Chinese and metrics rendered by code",
+            "deterministic_chart_overlay: charts rendered by code from chart-data",
+            "referenced_metrics:", "  - prediction_horizons",
+            f"speaker_notes_path: ../speaker-notes/slide-{number:02d}.md",
             f"speaker_notes:", f"  file: ../speaker-notes/slide-{number:02d}.md", "qa_checklist:",
             "  - title_not_overflow", "",
         ])
@@ -75,9 +146,11 @@ def build_valid_deck(root: Path, output_mode: str = "production-image") -> None:
         ])
         write(root / "speaker-notes" / f"slide-{number:02d}.md", note)
     if output_mode == "production-image":
-        write(root / "presentation.pptx", "pptx-test-bytes")
         for number in (1, 2):
             write(root / "final-images" / f"slide-{number:02d}.png", "png")
+        write(root / "final-images-qa.json", json.dumps({"status": "pass", "image_count": 2}))
+        notes = [(root / "speaker-notes" / f"slide-{number:02d}.md").read_text(encoding="utf-8").strip() for number in (1, 2)]
+        write_image_pptx_with_notes(root / "presentation.pptx", notes)
     else:
         for number in (1, 2):
             write(root / "backgrounds" / f"slide-{number:02d}-bg.png", "png")

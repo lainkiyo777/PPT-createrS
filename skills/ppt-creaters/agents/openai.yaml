@@ -1,4 +1,4 @@
 interface:
   display_name: "PPT Creaters"
-  short_description: "Build configurable presentations with typography, data, notes, and image-first packaging gates."
-  default_prompt: "Use $ppt-creaters to turn my source into a configured, data-checked presentation with controlled typography, speaker notes, and a validated PPTX."
+  short_description: "Build auditable multi-model PPTs with human Gates"
+  default_prompt: "Use $ppt-creaters to build an auditable presentation and stop at every required human Gate."

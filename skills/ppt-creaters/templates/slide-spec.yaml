@@ -21,11 +21,17 @@ visual:
   style: technology-dark
   effect: keynote
 image_prompt: Describe the complete slide composition and exact visual treatment.
+style_reference_prompt: Learn the reference template's visual language without copying source slides or fixed textbox coordinates.
+reference_images:
+  - references/template-previews/page-01.png
+deterministic_text_overlay: Define exact Chinese titles, body copy, numbers, labels, sources, and footnotes rendered by code.
+deterministic_chart_overlay: Define charts and tables rendered by code from data/chart-data; use none only when the page has no chart or table.
 source_assets: []
 dependencies: []
 referenced_metrics: []
 speaker_notes:
   file: ../speaker-notes/slide-01.md
+speaker_notes_path: ../speaker-notes/slide-01.md
 qa_checklist:
   - title_not_overflow
   - body_font_above_minimum

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import re
 import sys
@@ -27,7 +28,8 @@ CONFIG_REQUIRED = tuple(CONFIG_ENUMS) + (
 SPEC_REQUIRED = (
     "slide_number", "page_type", "title", "key_message", "font_roles", "layout", "visual",
     "template_application_mode", "dominant_visual", "layout_flexibility", "visual_inheritance", "prohibited_inheritance",
-    "source_assets", "referenced_metrics", "image_prompt", "speaker_notes", "qa_checklist",
+    "source_assets", "referenced_metrics", "image_prompt", "style_reference_prompt", "reference_images",
+    "deterministic_text_overlay", "deterministic_chart_overlay", "speaker_notes_path", "speaker_notes", "qa_checklist",
 )
 TYPOGRAPHY_MINIMUMS = {"body": 28, "chart_label": 24, "footnote": 18}
 TEMPLATE_PROFILE_REQUIRED = (
@@ -35,6 +37,15 @@ TEMPLATE_PROFILE_REQUIRED = (
     "image_treatment", "chart_style", "icon_style", "page_rhythm",
     "layout_principles", "prohibited_behaviors",
 )
+
+
+def _load_sibling(name: str):
+    path = Path(__file__).with_name(f"{name}.py")
+    spec = importlib.util.spec_from_file_location(f"ppt_creaters_{name}_validator", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def _read(path: Path, errors: list[str]) -> str:
@@ -162,7 +173,10 @@ def _mapping_file(path: Path, errors: list[str]) -> dict[str, object]:
                 continue
             key, value = stripped.split(":", 1)
             value = value.strip().strip("\"'")
-            result[key.strip()] = value
+            try:
+                result[key.strip()] = json.loads(value)
+            except json.JSONDecodeError:
+                result[key.strip()] = value
         return result
 
 
@@ -192,6 +206,15 @@ def _check_selection_gate(root: Path, values: dict[str, str], errors: list[str])
         else:
             if method != "user_confirmed":
                 errors.append("manual/direct mode requires confirmation_method: user_confirmed.")
+            if confirmed.get("confirmed_by") != "user":
+                errors.append("manual mode requires deck-config.confirmed.yaml confirmed_by: user.")
+            sources = confirmed.get("configuration_source")
+            required_source_fields = {
+                "presentation_type", "visual_style", "presentation_effect", "template_application_mode",
+                "output_mode", "notes_mode", "target_duration_minutes", "content_density",
+            }
+            if not isinstance(sources, dict) or set(sources) < required_source_fields:
+                errors.append("manual mode requires configuration_source for all eight confirmed fields.")
             for field in ("presentation_type", "visual_style", "presentation_effect", "workflow_mode", "template_application_mode", "output_mode", "notes_mode", "target_duration_minutes", "content_density"):
                 if field not in confirmed:
                     errors.append(f"deck-config.confirmed.yaml is missing confirmed field {field}.")
@@ -202,12 +225,23 @@ def _check_selection_gate(root: Path, values: dict[str, str], errors: list[str])
                 if missing:
                     errors.append("direct mode confirmation is missing explicit user fields: " + ", ".join(missing) + ".")
 
-    state_path = root / "build-status.json"
-    if state_path.is_file():
+    state_path = root / "build-state.yaml"
+    if not state_path.is_file():
+        errors.append("Missing build-state.yaml; final publication requires persistent workflow state.")
+    else:
         state = _mapping_file(state_path, errors)
         status = state.get("build_status")
-        if status in {"awaiting_configuration", "awaiting_style_selection", "failed"}:
-            errors.append(f"build-status.json blocks publication with build_status: {status}.")
+        if status != "completed":
+            errors.append(f"build-state.yaml blocks publication with build_status: {status}; require completed.")
+        history = state.get("transition_history")
+        if not isinstance(history, list) or not history:
+            errors.append("build-state.yaml requires non-empty audited transition_history.")
+        else:
+            last = history[-1]
+            if not isinstance(last, dict) or last.get("to") != "completed" or last.get("actor") != "orchestrator":
+                errors.append("completed transition must be recorded by orchestrator.")
+            if not isinstance(last.get("evidence_files"), list) or not last.get("evidence_files"):
+                errors.append("completed transition requires evidence_files.")
 
     if values.get("workflow_mode") != "manual":
         return
@@ -223,7 +257,7 @@ def _check_selection_gate(root: Path, values: dict[str, str], errors: list[str])
         errors.append("manual mode requires selected-style.yaml after user style selection.")
         return
     selected = _mapping_file(selected_path, errors)
-    for field in ("selected_candidate", "selected_by", "confirmation_timestamp", "candidate_profile_path"):
+    for field in ("selected_candidate", "selected_by", "confirmation_timestamp", "candidate_profile_path", "template_profile"):
         if field not in selected:
             errors.append(f"selected-style.yaml is missing required field {field}.")
     if selected.get("selected_by") != "user":
@@ -231,6 +265,8 @@ def _check_selection_gate(root: Path, values: dict[str, str], errors: list[str])
     names = {candidate.name for candidate in candidates}
     if selected.get("selected_candidate") not in names:
         errors.append("selected-style.yaml selected_candidate does not match a candidate directory.")
+    candidate_errors = _load_sibling("artifact_guards").validate_style_candidates(root)
+    errors.extend(candidate_errors)
 
 
 def _check_template_profile(root: Path, errors: list[str]) -> None:
@@ -342,7 +378,7 @@ def _check_specs_and_data(root: Path, slide_count: int, errors: list[str]) -> tu
             referenced.add(metric)
             if metric not in known_metrics:
                 errors.append(f"{path.name} references unknown metric {metric}.")
-        notes_file = _scalar(text, "file")
+        notes_file = _scalar(text, "speaker_notes_path") or _scalar(text, "file")
         if not notes_file:
             errors.append(f"{path.name} must point speaker_notes.file to a note file.")
     _status_report(root, "data-qa-report.md", errors)
@@ -387,6 +423,14 @@ def _check_output(root: Path, values: dict[str, str], slide_count: int, errors: 
             errors.append("production-image requires one final-images/slide-XX.png for every slide.")
         if not (root / "presentation.pptx").is_file():
             errors.append("production-image requires presentation.pptx.")
+        else:
+            qa = _mapping_file(root / "final-images-qa.json", errors)
+            if qa.get("status") != "pass" or str(qa.get("image_count")) != str(slide_count):
+                errors.append("final-images-qa.json must pass with image_count equal to slide count.")
+            note_errors = _load_sibling("presentation_guard").validate_presentation(
+                root / "presentation.pptx", root / "speaker-notes", slide_count=slide_count
+            )
+            errors.extend(note_errors)
     elif mode == "hybrid-editable":
         if not (root / "presentation.pptx").is_file():
             errors.append("hybrid-editable requires presentation.pptx as the editable output contract.")

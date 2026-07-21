@@ -8,6 +8,7 @@ outline, slide-spec, preview, final-image, or PPTX generation.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import sys
 from datetime import datetime, timezone
@@ -51,6 +52,7 @@ OPTIONS: dict[str, tuple[Any, ...]] = {
 }
 
 CANDIDATE_ASSETS = ("cover.png", "section.png", "content.png", "result.png", "style-profile.yaml")
+CANDIDATE_NAMES = ("candidate-a", "candidate-b", "candidate-c")
 
 
 class GateBlocked(RuntimeError):
@@ -131,8 +133,10 @@ def _read_mapping(path: Path) -> dict[str, Any]:
 
 
 def _write_state(output_dir: Path, status: str, message: str, **extra: Any) -> None:
-    payload = {"build_status": status, "message": message, "updated_at": _now(), **extra}
+    persisted_status = "generating_previews" if status == "ready" else status
+    payload = {"build_status": persisted_status, "message": message, "updated_at": _now(), **extra}
     output_dir.mkdir(parents=True, exist_ok=True)
+    _write_yaml_scalars(output_dir / "build-state.yaml", payload)
     (output_dir / "build-status.json").write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
@@ -214,6 +218,9 @@ def _validate_required_config(config: Mapping[str, Any]) -> list[str]:
 def _write_confirmed_config(output_dir: Path, config: Mapping[str, Any], method: str) -> Path:
     payload = dict(config)
     payload["confirmation_method"] = method
+    if method == "user_confirmed":
+        payload["confirmed_by"] = "user"
+        payload["configuration_source"] = {field: "user" for field in CONFIRM_FIELDS}
     payload["confirmation_timestamp"] = _now()
     path = output_dir / "deck-config.confirmed.yaml"
     _write_yaml_scalars(path, payload)
@@ -224,12 +231,18 @@ def _candidate_dirs(output_dir: Path) -> tuple[list[Path], list[str]]:
     root = output_dir / "style-candidates"
     candidates = sorted(path for path in root.glob("candidate-*") if path.is_dir())
     errors: list[str] = []
-    if not 2 <= len(candidates) <= 4:
-        errors.append("manual mode requires 2-4 style-candidates/candidate-* directories")
+    if [path.name for path in candidates] != list(CANDIDATE_NAMES):
+        errors.append(f"manual mode requires exactly {list(CANDIDATE_NAMES)}")
     for candidate in candidates:
         for asset in CANDIDATE_ASSETS:
             if not (candidate / asset).is_file():
                 errors.append(f"{candidate.name} is missing {asset}")
+    guard_path = Path(__file__).with_name("artifact_guards.py")
+    spec = importlib.util.spec_from_file_location("ppt_creaters_artifact_guards_config", guard_path)
+    guards = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = guards
+    spec.loader.exec_module(guards)
+    errors.extend(guards.validate_style_candidates(output_dir))
     return candidates, errors
 
 
@@ -258,6 +271,11 @@ def _manual_style_gate(
             _write_state(output_dir, "failed", message)
             _write_report(output_dir, "failed", message)
             return GateResult("failed", message)
+        if not selected.get("template_profile"):
+            message = "selected-style.yaml requires template_profile"
+            _write_state(output_dir, "failed", message)
+            _write_report(output_dir, "failed", message)
+            return GateResult("failed", message)
         return GateResult("ready", "user-confirmed candidate", selected_style_path=selected_path)
 
     output_fn("Candidate styles are ready. Select one; no candidate is selected automatically.")
@@ -279,12 +297,19 @@ def _manual_style_gate(
         _write_report(output_dir, "failed", message)
         return GateResult("failed", message)
     candidate = candidates[index - 1]
+    confirmed = _read_mapping(output_dir / "deck-config.confirmed.yaml")
     selected = {
         "selected_candidate": candidate.name,
         "selected_by": "user",
         "confirmation_timestamp": _now(),
         "candidate_profile_path": (candidate / "style-profile.yaml").relative_to(output_dir).as_posix(),
+        "template_profile": confirmed.get("template_profile", ""),
     }
+    if not selected["template_profile"]:
+        message = "manual style selection requires template_profile"
+        _write_state(output_dir, "failed", message)
+        _write_report(output_dir, "failed", message)
+        return GateResult("failed", message)
     _write_yaml_scalars(selected_path, selected)
     message = f"user selected {candidate.name}"
     _write_state(output_dir, "ready", message, selected_candidate=candidate.name)
@@ -389,7 +414,9 @@ def assert_generation_allowed(output_dir: Path, stage: str) -> None:
         selected_payload = _read_mapping(selected)
         if selected_payload.get("selected_by") != "user":
             raise GateBlocked("failed", f"{stage} blocked because selected_by is not user")
-    state_path = output_dir / "build-status.json"
+    state_path = output_dir / "build-state.yaml"
+    if not state_path.is_file():
+        state_path = output_dir / "build-status.json"
     if state_path.is_file():
         state = _read_mapping(state_path)
         status = state.get("build_status")

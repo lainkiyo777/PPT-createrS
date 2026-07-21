@@ -41,13 +41,30 @@ def base_config(workflow_mode="manual", selection_mode="guided"):
         "notes_mode": "full",
         "target_duration_minutes": 20,
         "content_density": "medium",
+        "template_profile": "references/deck-library/profiles/blue-template/style-profile.yaml",
     }
 
 
 def make_candidates(output: Path) -> None:
-    for candidate in ("candidate-a", "candidate-b"):
+    calls = []
+    for candidate in ("candidate-a", "candidate-b", "candidate-c"):
         for name in ("cover.png", "section.png", "content.png", "result.png", "style-profile.yaml"):
             write(output / "style-candidates" / candidate / name, "candidate")
+        for name in ("cover.png", "section.png", "content.png", "result.png"):
+            prompt = output / "style-candidates" / candidate / "prompts" / name.replace(".png", ".txt")
+            write(prompt, "prompt")
+            calls.append({
+                "tool_name": "image2",
+                "model_or_tool_version": "test-image2-v1",
+                "prompt_path": prompt.relative_to(output).as_posix(),
+                "reference_images": ["blue-template.png"],
+                "output_path": (output / "style-candidates" / candidate / name).relative_to(output).as_posix(),
+                "timestamp": "2026-07-21T00:00:00+00:00",
+                "success": True,
+                "error": None,
+                "status": "success",
+            })
+    write(output / "image-generation-manifest.json", json.dumps({"calls": calls}))
 
 
 def write_confirmed(output: Path, config: dict) -> None:
@@ -60,6 +77,7 @@ def write_selected(output: Path, selected_by="user") -> None:
         "selected_by": selected_by,
         "confirmation_timestamp": "2026-07-21T00:00:00+00:00",
         "candidate_profile_path": "style-candidates/candidate-a/style-profile.yaml",
+        "template_profile": "references/deck-library/profiles/blue-template/style-profile.yaml",
     }))
 
 
