@@ -1,132 +1,177 @@
 ---
 name: ppt-creaters
-description: Use when turning a topic, document, or outline into a configurable presentation with controlled text, data, typography, speaker notes, and verifiable PPT output.
+description: Build or refactor auditable, multi-model PowerPoint production workflows from topics, Markdown, documents, data, or PPTX templates. Use when Codex must create a presentation with explicit configuration choices, image2 visual generation, deterministic text/charts/notes, isolated read-only review, persistent human Gates, verified PowerPoint speaker notes, or an image-only final PPTX; also use when diagnosing or testing those workflow contracts.
 ---
 
 # PPT Creaters
 
-Release: 1.1.0
+Release: 2.0.0
 
-## Overview
+Build presentations as a persistent, auditable workflow. Confirm configuration before generation, use `image2` for visual composition, keep exact content deterministic, isolate Reviewer context, and let code—not a model—calculate PASS/FAIL.
 
-This Skill is a configurable PPT production orchestrator. It supports image-first production, a hybrid-editable contract, and background-only output while keeping content planning, typography, data, notes, and QA explicit.
+Read `references/multi-agent-contract.md` before changing orchestration, review, state, or artifact contracts. Read `references/p0-contract.md` when validating detailed output-mode fields and legacy P0 artifacts.
 
-Core principle: **先参数化，再结构化；先确定性文字和数据，再视觉化。**
+## Run the orchestrator
 
-The image adapter may create backgrounds, scenes, decorative visuals, and concept art. Code or a deterministic renderer must create Chinese titles, body text, key numbers, tables, charts, labels, page numbers, sources, and footnotes.
+Use `scripts/workflow_runner.py <output-dir>` as the only workflow entry point. Treat `scripts/config_gate.py` as a compatibility helper only.
 
-## When to Use
+Create `deck-config.yaml` and `deck-brief.yaml` before invoking the runner. Unless both modes were explicitly supplied as `workflow_mode: auto` and `selection_mode: direct`, resolve them to:
 
-Use this Skill when a topic, document, rough outline, or dataset must become a controlled presentation and the user needs one or more of the following: a selectable presentation type/style/effect, auto or manual workflow, production-image, hybrid-editable, or background-only output, speaker notes, deterministic metrics/charts, font-size guarantees, or a verifiable PPTX.
+```yaml
+workflow_mode: manual
+selection_mode: guided
+```
 
-Do not use it for a one-title edit, light copy polishing, or a tiny format change to an existing complete deck.
+Treat an uploaded template only as `template_source`; never treat it as configuration confirmation, style selection, or permission to use `strict-template`.
 
-## Required Configuration
+## Route models explicitly
 
-Before page generation, create both `deck-config.yaml` and `deck-brief.yaml`.
+Load `agents/model-routing.json` through `scripts/model_router.py`. Record every decision in `output/model-routing-manifest.json`. Fail when a required model is unavailable and no declared fallback is available; never substitute silently.
 
-`deck-config.yaml` must declare:
+Use these roles:
 
-- `presentation_type`: `research-report`, `technical-report`, `introductory`, `academic-defense`, `product-solution`, `executive-summary`, or `training-course`.
-- `visual_style`: `academic-clean`, `university-formal`, `technology-dark`, `industrial-technical`, `business-data`, `light-modern`, or `institutional-red`.
-- `presentation_effect`: `keynote`, `formal-report`, `academic`, `storytelling`, `dashboard`, `documentary`, or `minimal`.
-- `workflow_mode`: `auto` or `manual`.
-- `selection_mode`: `direct` or `guided`.
-- `output_mode`: `production-image`, `hybrid-editable`, or `background-only`.
-- `notes_mode`: `none`, `summary`, or `full`.
-- `content_density`, `target_duration_minutes`, `language`, `aspect_ratio`, `audience`, `style_confidence`, and `classification_reason`.
+- Orchestrator (`gpt-5.6-sol`): interpret requirements, plan narrative, route models, control state, and manage human/Reviewer Gates. Do not perform mechanical work or self-approve.
+- Producer (`gpt-5.6-sol`): create narrative, style abstraction, key/complex specs, image2 prompts, and revisions. Do not modify review results, change workflow state, or cross a Gate.
+- Slide Worker (`gpt-5.6-terra`; escalate complex work to `gpt-5.6-sol`): expand approved rules into ordinary specs, compressed copy, and notes.
+- Low-cost Worker (`gpt-5.6-luna`; explicit fallback `gpt-5.4-mini`): parse, classify, normalize, log, inspect, and run mechanical checks.
+- Reviewer (`gpt-5.6-terra`) and Final Reviewer (`gpt-5.6-sol`): inspect only frozen review packs in isolated, read-only contexts. Do not read Producer context, write files, call `image2`, or call PPT tools.
 
-`deck-brief.yaml` must include `target_slide_count` and `presentation_goal`, plus source, audience, use-case, language, duration, and output-directory context when available.
+## Enforce persistent state and Gates
 
-If `workflow_mode: auto`, classify the parameters and record the reason. If `workflow_mode: manual` and `selection_mode: guided`, generate 2–4 candidate packages under `style-candidates/`, wait for confirmation, and write `selected-style.yaml`. Do not generate the full deck before that file exists. `selection_mode: direct` may proceed when the user explicitly supplied all parameters.
+Persist state in `output/build-state.yaml` and mirror it to `build-status.json`. Allow only:
 
-## Output Mode Contracts
+```text
+initialized
+awaiting_configuration
+generating_style_candidates
+awaiting_style_selection
+generating_slide_specs
+generating_previews
+awaiting_preview_approval
+generating_final_images
+assembling_ppt
+reviewing
+revising
+awaiting_human_review
+final_qa
+completed
+failed
+```
 
-### production-image
+Let only the Orchestrator transition state. Record timestamp, actor, stage, evidence files, and message for every transition. Require at least one existing evidence file. Never enter two future `awaiting_*` states in one invocation. Stop immediately after the next human Gate.
 
-Generate one complete approved final PNG per slide and assemble `presentation.pptx` with one full-slide image per page. Do not recreate body text, tables, charts, screenshots, or icons as native PowerPoint objects.
+Allow `completed` only when a real `gate-decision.json` records both `passed: true` and `deterministic_checks_passed: true`.
 
-### hybrid-editable
+## Stop at configuration on the first run
 
-Keep the mode contract and output interfaces explicit: visual backgrounds and complex illustrations may be images, while titles, body copy, metrics, tables, charts, and notes are deterministic editable objects. Do not claim full hybrid editability unless every editable object is actually implemented and validated.
+On the first invocation, do not consume user input. Display choices for all eight fields, write `deck-config.pending.yaml` and `config-selection-report.md`, transition to `awaiting_configuration`, and stop:
 
-### background-only
+- `presentation_type`
+- `visual_style`
+- `presentation_effect`
+- `template_application_mode`
+- `output_mode`
+- `notes_mode`
+- `target_duration_minutes`
+- `content_density`
 
-Generate only `backgrounds/slide-XX-bg.png`, `layout-guides/slide-XX-layout.json`, and `presentation-backgrounds.pptx`. Background images must not contain long body copy or immutable key numbers. Layout guides must include `slide_number`, `page_type`, `title_area`, and `subtitle_area`.
+After explicit manual/guided confirmation, write `deck-config.confirmed.yaml` with `confirmed_by: user`, `confirmation_timestamp`, and a `configuration_source` entry for every field. Do not continue without this evidence.
 
-## End-to-End Workflow and Gates
+## Generate and stop at style candidates
 
-Advance only when the previous gate passes. A failed gate yields `build_status: failed` and stops publication.
+In manual mode, generate exactly three interpretations of the same template with real `image2` calls:
 
-1. **Configuration gate:** validate enums, required fields, style confidence, aspect ratio, duration, and mode prerequisites.
-2. **Brief and outline gate:** read the source, record gaps/assumptions, and create a narrative `outline.md`; do not use loose headings as a deck plan.
-3. **Slide-spec gate:** create one `slide-specs/slide-XX.yaml` per page. Each spec includes the required fields in `templates/slide-spec.yaml` and references font roles, metrics, source assets, speaker notes, dependencies, and acceptance checks.
-4. **Data gate:** create `data/metrics.json`, `data/tables.json`, and JSON datasets under `data/chart-data/`. Every key metric has one unique ID; specs and notes reference IDs instead of duplicating numeric literals. Charts are code-rendered from `chart-data`.
-5. **Preview gate:** generate one preview image per spec with the selected visual system. Review the ordered set. A failed page returns to its own YAML spec before any image or PPTX regeneration.
-6. **Typography gate:** create `typography-scale.yaml` and `typography-qa-report.md`. Body text is at least 28 px, chart/table labels at least 24 px, footnotes at least 18 px, and a role stays within ±10% across pages. Do not shrink text indefinitely; delete, restructure, or split content.
-7. **Final-image gate:** after preview approval, generate distinct final images at no less than 1920×1080. Do not label a preview as final.
-8. **Speaker-note gate:** for `summary` or `full`, create one `speaker-notes/slide-XX.md` per page. Full notes explain the page instead of copying it, cite metric IDs, include emphasis and transitions, and total approximately `target_duration_minutes`. Create `speaker-notes-report.md`.
-9. **PPT assembly gate:** use the selected output-mode adapter. Production-image assembly inserts only final images at full canvas; background-only assembly inserts backgrounds and layout guides; hybrid assembly must expose its actual editable-object contract.
-10. **Notes round-trip gate:** when notes are written to PPTX, save, reopen, read them back, and compare every page with `speaker-notes/`. Missing, shifted, or changed notes fail the build.
-11. **Final gate:** produce `visual-qa-report.md`, `typography-qa-report.md`, `data-qa-report.md`, `speaker-notes-report.md`, and `generation-report.md`; run both validators before marking the build complete.
+- Candidate A: clean university research—white canvas, blue structure, restrained and formal.
+- Candidate B: technology launch—deep blue/high contrast, stronger hero visual and impact.
+- Candidate C: data technical report—chart-first, explicit hierarchy, research-result oriented.
 
-## Deterministic Content Rules
+Generate `cover.png`, `section.png`, `content.png`, `result.png`, and `style-profile.yaml` for each candidate. Record every call in `image-generation-manifest.json` with:
 
-- Do not ask an image model to render exact Chinese copy, key figures, tables, axes, chart labels, professional terms, page numbers, sources, or footnotes.
-- Do not hand-write the same metric in multiple artifacts. Resolve it from `metrics.json` by unique key.
-- A data conflict, missing source, missing metric, missing chart dataset, invalid font role, missing note, or failed read-back is a hard build failure.
-- Never invent an external image/PPT tool, command, API, output file, or successful result. If an adapter is unavailable, report the blocked state and preserve executable prompts and manifests only.
+`tool_name`, `model_or_tool_version`, `prompt_path`, `reference_images`, `output_path`, `timestamp`, `success`, and `error`.
 
-## Fixed v1.1 Output Contract
+Fail when `image2` is unavailable, not called, unsuccessful, or missing from the manifest. Never use `presentation` or code-rendered cards as fallback. Transition to `awaiting_style_selection`, display A/B/C, and stop. Never auto-select Candidate A.
+
+Accept only `selected-style.yaml` with `selected_by: user`, `selected_candidate`, `confirmation_timestamp`, `candidate_profile_path`, and `template_profile`.
+
+## Apply templates semantically
+
+Default to `style-reference`. Profile a supplied PPTX at `references/deck-library/profiles/<template-name>/style-profile.yaml`, covering palette, typography, spacing, composition, image treatment, icons, charts, page rhythm, layout principles, and prohibited behaviors.
+
+In `style-reference`, learn the visual language but never copy source slides, source text, or exact textbox coordinates. Recompose from current semantics. Let `image2` own background, scene, composition, and decoration. Let deterministic code own accurate Chinese, numbers, tables, charts, labels, page numbers, sources, and footnotes.
+
+Use `adaptive-layout` for flexible page-family reuse. Use duplicate-slide and inherited textboxes as the primary method only in explicitly user-selected `strict-template` mode.
+
+## Require independent slide specs
+
+Create one `slide-specs/slide-XX.yaml` per page and validate it against `schemas/slide-spec.schema.json`. Require:
+
+`slide_number`, `page_type`, `key_message`, `dominant_visual`, `template_application_mode`, `style_reference_prompt`, `image_prompt`, `reference_images`, `layout_flexibility`, `visual_inheritance`, `prohibited_inheritance`, `deterministic_text_overlay`, `deterministic_chart_overlay`, `referenced_metrics`, `speaker_notes_path`, and `qa_checklist`.
+
+Block previews when `image_prompt` is absent. Tell `image2` to learn style, avoid source text/coordinates, recompose for semantics, reserve safe overlay areas, and avoid unverifiable numbers or long Chinese copy.
+
+## Isolate review and calculate the Gate
+
+Build immutable `review-pack/round-XX/` directories with `scripts/review_isolation.py`. Include only the approved brief/config/style/rubric, source materials, specs, previews, overview, metrics, notes, and final PPTX when present. Hash files in `review-pack-manifest.json`. Exclude Producer conversation, logs, model identity, self-assessment, and persuasive summaries.
+
+Have the Reviewer return JSON matching `schemas/evaluation.schema.json`. Persist it append-only as `reviews/round-XX/evaluation.json` through the Orchestrator. Require evidence for every issue.
+
+Run `scripts/deterministic_checks.py` for counts, resolution, typography, data, image2 provenance, selected style, presentation structure, and notes round-trip. Run `scripts/review_gate.py` to recompute weighted score and ignore model-declared `total_score` or `passed`.
+
+Use the final weights from `rubrics/final-delivery-rubric.yaml` and calculate:
+
+```text
+passed = recalculated_score >= 85
+         AND critical_failures == 0
+         AND deterministic_checks_passed == true
+         AND evaluation_schema_errors == 0
+```
+
+After a failed review, pass only structured issues to Producer. Preserve `artifacts/round-01/` and `artifacts/round-02/`; require `revision-ready.json` before regeneration. After the second failed round, transition to `awaiting_human_review` and stop.
+
+## Restrict final assembly
+
+Call `presentation` only after final-image count equals slide count, final-image QA passes, notes count equals slide count, and `selected-style.yaml` says `selected_by: user`.
+
+Permit assembly to create a blank 16:9 deck, insert one full-slide final image per page, write the matching speaker note, save, reopen, and verify. Forbid layouts, text boxes, shapes, charts, image modification, page design, and image2 fallback.
+
+Require real `ppt/notesSlides/notesSlideN.xml` parts. Verify count, slide mapping, and exact text equality with `speaker-notes/slide-XX.md`. External Markdown without valid notesSlides is a hard failure.
+
+## Preserve the output contract
 
 ```text
 output/
+├── build-state.yaml
+├── build-status.json
 ├── deck-config.yaml
+├── deck-config.pending.yaml
+├── deck-config.confirmed.yaml
 ├── deck-brief.yaml
-├── selected-style.yaml                 # required for manual + guided
+├── config-selection-report.md
+├── model-routing-manifest.json
+├── image-generation-manifest.json
+├── selected-style.yaml
+├── style-candidates/candidate-{a,b,c}/
 ├── outline.md
-├── typography-scale.yaml
-├── style-candidates/                   # required for manual + guided
 ├── slide-specs/slide-XX.yaml
-├── speaker-notes/slide-XX.md           # required for summary/full
-├── data/metrics.json
-├── data/tables.json
-├── data/chart-data/*.json
-├── charts/
-├── backgrounds/                        # background-only
-├── layout-guides/                      # background-only
+├── data/{metrics.json,tables.json,chart-data/}
 ├── preview-images/
-├── final-images/                       # production-image
-├── overview/overview.png
+├── final-images/
+├── final-images-qa.json
+├── speaker-notes/slide-XX.md
+├── review-pack/round-XX/
+├── reviews/round-XX/{review-request.json,evaluation.json,deterministic-checks.json,gate-decision.json}
+├── artifacts/round-XX/{structured-issues.json,revision-ready.json}
 ├── presentation.pptx
-├── visual-qa-report.md
-├── typography-qa-report.md
-├── data-qa-report.md
-├── speaker-notes-report.md
-└── generation-report.md
+└── *-qa-report.md
 ```
 
-The legacy v1.0 fixed image-only validator remains available as `scripts/validate_pipeline.py`. The P0 contract validator is `scripts/validate_p0.py`; it is dependency-free and prints `build_status: failed` on any hard failure.
+## Validate changes
 
-## Non-Negotiable Rules
+Run:
 
-1. Never generate images directly from a rough outline.
-2. Never omit independent slide specs.
-3. Never enter formal generation in manual-guided mode without `selected-style.yaml`.
-4. Never use conflicting visual systems across pages.
-5. Never allow body text below 28 px or chart/table labels below 24 px.
-6. Never duplicate key numeric literals instead of referencing `metrics.json`.
-7. Never use an image model to fabricate exact data or long Chinese text.
-8. Never publish when any gate, notes round-trip, or validator fails.
-9. Never use ordinary presentation layout as a degraded fallback for production-image.
-10. Never claim unavailable tools, generated files, editable objects, or successful checks.
+```text
+python -m unittest discover -s skills/ppt-creaters/tests -v
+python scripts/validate_p0.py <output-dir>
+```
 
-## P1 Scope
-
-P0 reserves interfaces and directories for large-scale template retrieval, a graphical style selector, automatic template learning, complete hybrid-editable authoring, and university brand adaptation. These are not required for v1.1.0.
-
-## References and Templates
-
-- Read `references/p0-contract.md` for schemas, mode-specific examples, and gate details.
-- Start from `templates/deck-config.yaml`, `templates/deck-brief.yaml`, `templates/typography-scale.yaml`, `templates/slide-spec.yaml`, `templates/speaker-note.md`, `templates/metrics.json`, `templates/tables.json`, and `templates/layout-guide.json`.
-- Run `python scripts/validate_p0.py <output>` for P0 contracts and `python scripts/validate_pipeline.py <output>` for the legacy production-image contract.
+Use `scripts/presentation_guard.py` for assembly/notes checks, `scripts/artifact_guards.py` for image2/spec checks, and `scripts/template_policy.py` for template-mode semantics. Never claim success for an unavailable adapter, missing artifact, or unexecuted check.

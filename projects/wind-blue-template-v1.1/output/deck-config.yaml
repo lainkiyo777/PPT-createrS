@@ -1,0 +1,18 @@
+presentation_type: technical-report
+visual_style: industrial-technical
+presentation_effect: formal-report
+workflow_mode: auto
+selection_mode: direct
+output_mode: production-image
+notes_mode: full
+content_density: medium
+target_duration_minutes: 20
+language: zh-CN
+aspect_ratio: "16:9"
+audience: wind-power-model-reviewers
+style_confidence: 0.98
+classification_reason: >-
+  用户提供蓝色模板 PPTX，要求按最新 ppt-creaters Skill 制作风电项目正式汇报；
+  因此沿用模板唯一视觉路线，采用生产图片模式并保留完整讲解备注。
+template_source: ../../../skills/ppt-creaters/references/deck-library/inbox/蓝色模板.pptx
+source_material: ../input/整合版PPT内容大纲.md

@@ -1,0 +1,284 @@
+{
+  "record_count": {
+    "value": 121847,
+    "unit": "rows",
+    "label": "数据记录数",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "field_count": {
+    "value": 17,
+    "unit": "fields",
+    "label": "字段数量",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "turbine_count": {
+    "value": 4,
+    "unit": "turbines",
+    "label": "覆盖机组",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "sample_interval": {
+    "value": 5,
+    "unit": "min",
+    "label": "数据粒度",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "turbine_13_rows": {
+    "value": 40448,
+    "unit": "rows",
+    "label": "#13 数据条数",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "turbine_11_rows": {
+    "value": 27365,
+    "unit": "rows",
+    "label": "#11 数据条数",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "turbine_14_rows": {
+    "value": 27090,
+    "unit": "rows",
+    "label": "#14 数据条数",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "turbine_16_rows": {
+    "value": 26944,
+    "unit": "rows",
+    "label": "#16 数据条数",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "mean_wind_speed": {
+    "value": 5.01,
+    "unit": "m/s",
+    "label": "平均风速",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "actual_power_mean": {
+    "value": 1233.23,
+    "unit": "kW",
+    "label": "平均有功功率",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "actual_theoretical_ratio": {
+    "value": 83.95,
+    "unit": "%",
+    "label": "实际/理论电量比例",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "full_train_windows": {
+    "value": 67657,
+    "unit": "windows",
+    "label": "full train",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "full_val_windows": {
+    "value": 24870,
+    "unit": "windows",
+    "label": "full val",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "full_test_windows": {
+    "value": 22589,
+    "unit": "windows",
+    "label": "full test",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "clean_test_windows": {
+    "value": 1273,
+    "unit": "windows",
+    "label": "OpenOA clean test",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "patchtst_full_speed_mae": {
+    "value": 1.3299,
+    "unit": "m/s",
+    "label": "PatchTST full Speed MAE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "patchtst_clean_speed_mae": {
+    "value": 1.2486,
+    "unit": "m/s",
+    "label": "PatchTST full→clean Speed MAE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "moe_full_mae": {
+    "value": 179.17,
+    "unit": "kW",
+    "label": "MoE 全测试集 MAE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "moe_normal_mae": {
+    "value": 154.31,
+    "unit": "kW",
+    "label": "MoE 正常工况 MAE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "moe_normal_r2": {
+    "value": 0.9573,
+    "unit": "R²",
+    "label": "MoE 正常工况 R²",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "moe_15min_pass": {
+    "value": 88.04,
+    "unit": "%",
+    "label": "MoE 正常工况 15min 合格率",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "power_train_samples": {
+    "value": 43775,
+    "unit": "samples",
+    "label": "功率训练样本",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "power_val_samples": {
+    "value": 9381,
+    "unit": "samples",
+    "label": "功率验证样本",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "power_test_samples": {
+    "value": 9381,
+    "unit": "samples",
+    "label": "功率测试样本",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "normal_test_samples": {
+    "value": 8874,
+    "unit": "samples",
+    "label": "正常工况测试样本",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "persistence_speed_mae": {
+    "value": 1.4869,
+    "unit": "m/s",
+    "label": "Persistence Speed MAE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "persistence_speed_rmse": {
+    "value": 1.9622,
+    "unit": "m/s",
+    "label": "Persistence Speed RMSE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "fuxi_best_speed_mae": {
+    "value": 1.3552,
+    "unit": "m/s",
+    "label": "FuXi-CFD best Speed MAE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "fuxi_best_speed_rmse": {
+    "value": 1.7732,
+    "unit": "m/s",
+    "label": "FuXi-CFD best Speed RMSE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "fuxi_best_direction_mae": {
+    "value": 12.01,
+    "unit": "deg",
+    "label": "FuXi-CFD best 风向角 MAE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "patchtst_full_speed_rmse": {
+    "value": 1.7644,
+    "unit": "m/s",
+    "label": "PatchTST full Speed RMSE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "patchtst_full_direction_mae": {
+    "value": 11.37,
+    "unit": "deg",
+    "label": "PatchTST full 风向角 MAE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "vimts_speed_mae": {
+    "value": 1.3643,
+    "unit": "m/s",
+    "label": "VIMTS Speed MAE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "vimts_speed_rmse": {
+    "value": 1.772,
+    "unit": "m/s",
+    "label": "VIMTS Speed RMSE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "vimts_direction_mae": {
+    "value": 11.71,
+    "unit": "deg",
+    "label": "VIMTS 风向角 MAE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "kafnet_speed_mae": {
+    "value": 1.5708,
+    "unit": "m/s",
+    "label": "KAFNet Speed MAE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "kafnet_speed_rmse": {
+    "value": 1.9793,
+    "unit": "m/s",
+    "label": "KAFNet Speed RMSE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "kafnet_direction_mae": {
+    "value": 11.6,
+    "unit": "deg",
+    "label": "KAFNet 风向角 MAE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "xgb_full_mae": {
+    "value": 208.83,
+    "unit": "kW",
+    "label": "XGBoost 全测试集 MAE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "xgb_normal_mae": {
+    "value": 181.8,
+    "unit": "kW",
+    "label": "XGBoost 正常工况 MAE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "xgb_full_r2": {
+    "value": 0.9186,
+    "unit": "R²",
+    "label": "XGBoost 全测试集 R²",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "xgb_normal_r2": {
+    "value": 0.9462,
+    "unit": "R²",
+    "label": "XGBoost 正常工况 R²",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "mlp_full_mae": {
+    "value": 182.81,
+    "unit": "kW",
+    "label": "MLP 全测试集 MAE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "mlp_normal_mae": {
+    "value": 158.21,
+    "unit": "kW",
+    "label": "MLP 正常工况 MAE",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "mlp_full_r2": {
+    "value": 0.9296,
+    "unit": "R²",
+    "label": "MLP 全测试集 R²",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "mlp_normal_r2": {
+    "value": 0.9547,
+    "unit": "R²",
+    "label": "MLP 正常工况 R²",
+    "source": "整合版PPT内容大纲.md"
+  },
+  "moe_full_r2": {
+    "value": 0.9323,
+    "unit": "R²",
+    "label": "MoE 全测试集 R²",
+    "source": "整合版PPT内容大纲.md"
+  }
+}

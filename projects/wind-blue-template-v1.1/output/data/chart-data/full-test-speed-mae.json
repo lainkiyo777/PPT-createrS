@@ -1,0 +1,9 @@
+{
+  "chart_id": "full_test_speed_mae",
+  "title": "full test Speed MAE",
+  "metric_ids": ["patchtst_full_speed_mae", "fuxi_best_speed_mae", "vimts_speed_mae", "kafnet_speed_mae"],
+  "categories": ["PatchTST", "FuXi-CFD", "VIMTS", "KAFNet"],
+  "values": [1.3299, 1.3552, 1.3643, 1.5708],
+  "unit": "m/s",
+  "source": "整合版PPT内容大纲.md"
+}

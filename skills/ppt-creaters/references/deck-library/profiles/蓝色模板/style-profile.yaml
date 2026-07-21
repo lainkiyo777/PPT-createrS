@@ -1,0 +1,84 @@
+profile_version: "2.0"
+template_name: "蓝色模板"
+source_template: "蓝色模板.pptx"
+application_default: style-reference
+canvas:
+  aspect_ratio: "16:9"
+  width: 1920
+  height: 1080
+audit_evidence:
+  source_slide_count: 11
+  extracted_media_count: 7
+  evidence: template-inspect/template-manifest.json and rendered source-slide previews
+  interpretation: >-
+    The deck is a blue geometric visual language with photographic cover assets,
+    restrained cyan accents, generous safe margins, and a clear cover-to-evidence rhythm.
+color_palette:
+  primary_blue: "#005EA4"
+  accent_cyan: "#039ACF"
+  deep_blue: "#00467F"
+  white: "#FFFFFF"
+  text_on_light: "#16324F"
+  usage: >-
+    Anchor titles, bands, rules, and key metrics in blue; use cyan for emphasis and
+    connectors; use white or very light fields for dense evidence and charts.
+typography:
+  families:
+    primary: "Chinese sans-serif"
+    secondary: "DengXian or Microsoft YaHei"
+    fallback: "Arial Unicode MS"
+  language: "Chinese sans-serif"
+  scale:
+    cover_title: "72-92 px, bold, one phrase when possible"
+    section_title: "60-76 px, bold"
+    page_title: "46-56 px, bold"
+    key_metric: "48-72 px, bold"
+    body: "28-34 px, regular"
+    chart_label: "24-28 px, regular"
+    footnote: "18-21 px, regular"
+spacing:
+  safe_margin: "6% of canvas on all sides"
+  title_to_content: "24-40 px"
+  card_gutter: "20-32 px"
+  density_rule: "Preserve whitespace around the dominant visual; split when content exceeds readable capacity."
+composition_language:
+  principles:
+    - "Asymmetric balance with one clear visual anchor"
+    - "Blue structural geometry framing a white or photographic field"
+    - "Strong left-to-right reading axis with deliberate empty space"
+    - "Content semantics choose the composition; source pages are inspiration only"
+  allowed_recomposition:
+    - "Move, resize, delete, or add text containers"
+    - "Change column count, card count, image ratio, chart size, and hierarchy"
+    - "Add nodes, arrows, axes, callouts, and code or data diagrams"
+image_treatment:
+  photography: "Crisp wind, infrastructure, or field imagery with blue-toned grading and controlled crop"
+  diagrams: "Flat, clean geometry with blue/cyan connectors and high contrast"
+  generation_rule: "Use the profile and approved template previews as style references, never as source-page copies"
+chart_style:
+  visual_language: "Clean blue/cyan charts on light fields, restrained gridlines, direct labels, one dominant chart"
+  comparison: "Use direct labels and a visible baseline or delta"
+  architecture: "Use explicit nodes, arrows, inputs, and outputs"
+  deterministic_text: "Render exact Chinese, numbers, tables, and chart labels with code"
+icon_style:
+  language: "Simple line or solid geometric icons, consistent stroke weight, blue/cyan accents"
+  rule: "Keep icons subordinate to the page message and preserve supplied brand icons when present"
+page_rhythm:
+  sequence: "cover -> section -> evidence -> method or architecture -> result -> conclusion"
+  pacing: "Alternate high-information evidence with lower-density transition or thesis pages"
+  repetition: "Reuse the visual language, not identical source compositions"
+layout_principles:
+  - "Select a page family by semantic role, then design a new composition"
+  - "Use title safe areas and consistent baselines without binding source textbox coordinates"
+  - "Let chart, architecture, or scene own the center when it carries the conclusion"
+  - "If content exceeds template capacity, recompose or split instead of shrinking type"
+  - "Keep all pages 16:9 and maintain the same style-profile inheritance"
+prohibited_behaviors:
+  - "Do not duplicate source slides as the default"
+  - "Do not copy source Chinese, source text, or exact textbox geometry"
+  - "Do not treat the template as a background image only"
+  - "Do not force body copy into inherited small boxes"
+  - "Do not replace a required chart with decorative cards"
+  - "Do not enable strict-template without explicit user confirmation"
+  - "Do not infer strict-template from an uploaded PPTX"
+  - "Do not let template fidelity outrank content semantics"

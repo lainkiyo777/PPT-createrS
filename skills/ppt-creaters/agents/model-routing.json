@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "agents": {
+    "orchestrator": {
+      "model": "gpt-5.6-sol",
+      "responsibilities": [
+        "understand_user_requirements",
+        "resolve_workflow_and_selection_modes",
+        "analyze_template_visual_language",
+        "plan_deck_narrative",
+        "select_dominant_visuals",
+        "route_models",
+        "manage_human_gates",
+        "manage_producer_and_reviewer"
+      ],
+      "prohibited": ["mechanical_file_processing", "self_approve_review"]
+    },
+    "producer": {
+      "model": "gpt-5.6-sol",
+      "responsibilities": [
+        "key_slide_design",
+        "outline_and_narrative",
+        "template_style_abstraction",
+        "complex_slide_specs",
+        "image2_prompt_design",
+        "revise_from_structured_issues"
+      ],
+      "prohibited": ["modify_reviewer_results", "self_release", "cross_human_gate"]
+    },
+    "slide_worker": {
+      "model": "gpt-5.6-terra",
+      "escalation_model": "gpt-5.6-sol",
+      "responsibilities": [
+        "ordinary_slide_specs",
+        "copy_compression",
+        "ordinary_speaker_notes",
+        "expand_approved_visual_rules"
+      ]
+    },
+    "low_cost_worker": {
+      "model": "gpt-5.6-luna",
+      "fallback_model": "gpt-5.4-mini",
+      "responsibilities": [
+        "parse_markdown_and_documents",
+        "classify_files",
+        "normalize_yaml_json",
+        "generate_logs",
+        "inspect_output_directories",
+        "mechanical_tests"
+      ]
+    },
+    "reviewer": {
+      "model": "gpt-5.6-terra",
+      "isolated_context": true,
+      "read_only": true,
+      "responsibilities": [
+        "review_previews",
+        "review_narrative",
+        "review_template_alignment",
+        "review_typography_density_repetition",
+        "review_speaker_notes"
+      ],
+      "prohibited": [
+        "read_producer_conversation",
+        "read_producer_self_assessment",
+        "modify_generated_files",
+        "call_image2",
+        "call_presentation_tools"
+      ]
+    },
+    "final_reviewer": {
+      "model": "gpt-5.6-sol",
+      "isolated_context": true,
+      "read_only": true,
+      "responsibilities": [
+        "review_final_ppt",
+        "review_key_technical_conclusions",
+        "verify_data_consistency",
+        "judge_delivery_quality"
+      ],
+      "prohibited": ["modify_generated_files", "call_image2", "call_presentation_tools"]
+    }
+  },
+  "tools": {
+    "visual_generator": "image2",
+    "chart_renderer": "deterministic_code",
+    "text_renderer": "deterministic_code",
+    "ppt_assembler": "deterministic_code_or_presentation_assembly_only",
+    "notes_writer": "deterministic_pptx_notes_writer",
+    "typography_validator": "deterministic_code",
+    "data_validator": "deterministic_code"
+  }
+}

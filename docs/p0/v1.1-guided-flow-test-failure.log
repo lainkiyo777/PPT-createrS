@@ -1,0 +1,17 @@
+P0-A configuration gate RED-phase failure record
+
+Command:
+python -m unittest skills.ppt-creaters.tests.test_config_gate
+
+Context:
+The test suite was written before scripts/config_gate.py was implemented.
+
+Observed result:
+Ran 10 tests
+FAILED (errors=10)
+
+Representative failure:
+FileNotFoundError: .../skills/ppt-creaters/scripts/config_gate.py
+
+Interpretation:
+All ten tests failed because the runtime configuration gate and its waiting path did not exist. This is the baseline failure that the implementation had to fix.

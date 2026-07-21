@@ -1,0 +1,29 @@
+template_application_mode: style-reference
+source_slide_reference: null
+visual_inheritance: "blue/cyan palette, Chinese sans hierarchy, generous whitespace, geometric anchors, restrained image treatment"
+prohibited_inheritance: "source Chinese, source text, exact source textbox coordinates, duplicate-slide mapping"
+image_prompt: >-
+  Learn the blue-template visual language from the style profile and approved template
+  preview references. Do not copy source Chinese, source text, or exact source
+  textbox layout. Recompose the page for its current semantics. The image model
+  handles background, composition, decorative geometry, and scene imagery. A
+  deterministic renderer overlays exact Chinese, key numbers, tables, and charts.
+source_assets: []
+dependencies:
+  - "skills/ppt-creaters/references/deck-library/profiles/蓝色模板/style-profile.yaml"
+qa_checklist:
+  - "same visual inheritance as the other test pages"
+  - "new composition is visibly different from source slides"
+  - "title and key message remain readable at presentation distance"
+slide_id: slide-01
+page_type: model-comparison
+title: "模型结果比较"
+key_message: "The selected model reduces forecast error while preserving a clear baseline comparison."
+dominant_visual: "new grouped bar chart with direct labels and a highlighted delta"
+layout_flexibility: "recompose into chart-led asymmetric layout; resize chart; add direct labels and callout"
+composition_id: comparison-recomposed
+layout:
+  reuse_mode: new-composition
+  structure: chart-led-asymmetric
+  chart_required: true
+  allowed_additions: [chart, baseline, delta-callout]

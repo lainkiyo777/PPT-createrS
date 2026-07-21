@@ -1,0 +1,19 @@
+name: style-candidate
+version: 1
+minimum_score: 85
+maximum_critical_failures: 0
+dimensions:
+  workflow_compliance: 25
+  content_accuracy: 5
+  narrative_structure: 5
+  visual_quality: 25
+  typography: 10
+  data_integrity: 5
+  speaker_notes: 5
+  template_style_alignment: 20
+critical_failures:
+  - image2_not_actually_called
+  - candidate_count_not_three
+  - presentation_participated_in_page_design
+  - presentation_fallback_after_image2_failure
+  - execution_crossed_human_gate

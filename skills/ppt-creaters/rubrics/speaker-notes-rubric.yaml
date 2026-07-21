@@ -1,0 +1,18 @@
+name: speaker-notes
+version: 1
+minimum_score: 85
+maximum_critical_failures: 0
+dimensions:
+  workflow_compliance: 10
+  content_accuracy: 20
+  narrative_structure: 15
+  visual_quality: 5
+  typography: 5
+  data_integrity: 15
+  speaker_notes: 25
+  template_style_alignment: 5
+critical_failures:
+  - key_data_conflicts_with_metrics
+  - note_count_mismatch
+  - missing_real_notes_slides
+  - note_slide_mapping_mismatch

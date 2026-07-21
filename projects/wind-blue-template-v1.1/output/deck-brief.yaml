@@ -1,0 +1,16 @@
+project_name: 延长风电场短时功率预测模型汇报（蓝色模板版）
+presentation_goal: >-
+  将 5 分钟 SCADA 数据、风速风向预测与功率映射模型串成可验证的短时风功率闭环，
+  明确当前结果、数据口径、风险与下一步验证计划。
+source_material: ../input/整合版PPT内容大纲.md
+audience: 风电项目技术评审、模型研发与现场运维团队
+use_case: 正式技术汇报与后续复用
+language: zh-CN
+target_slide_count: 24
+presentation_duration_minutes: 20
+delivery_mode: production
+output_directory: output/
+visual_references:
+  - ../../../skills/ppt-creaters/references/deck-library/inbox/蓝色模板.pptx
+brand_constraints: 仅使用用户提供的蓝色模板作为视觉来源；不引入其他模板或品牌图形。
+available_tools: artifact-tool, bundled-renderer

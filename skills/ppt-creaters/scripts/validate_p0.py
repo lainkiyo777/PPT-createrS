@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import re
 import sys
@@ -16,6 +17,7 @@ CONFIG_ENUMS = {
     "presentation_effect": {"keynote", "formal-report", "academic", "storytelling", "dashboard", "documentary", "minimal"},
     "workflow_mode": {"auto", "manual"},
     "selection_mode": {"direct", "guided"},
+    "template_application_mode": {"style-reference", "adaptive-layout", "strict-template"},
     "output_mode": {"production-image", "hybrid-editable", "background-only"},
     "notes_mode": {"none", "summary", "full"},
     "content_density": {"low", "medium", "high"},
@@ -25,9 +27,25 @@ CONFIG_REQUIRED = tuple(CONFIG_ENUMS) + (
 )
 SPEC_REQUIRED = (
     "slide_number", "page_type", "title", "key_message", "font_roles", "layout", "visual",
-    "source_assets", "referenced_metrics", "image_prompt", "speaker_notes", "qa_checklist",
+    "template_application_mode", "dominant_visual", "layout_flexibility", "visual_inheritance", "prohibited_inheritance",
+    "source_assets", "referenced_metrics", "image_prompt", "style_reference_prompt", "reference_images",
+    "deterministic_text_overlay", "deterministic_chart_overlay", "speaker_notes_path", "speaker_notes", "qa_checklist",
 )
 TYPOGRAPHY_MINIMUMS = {"body": 28, "chart_label": 24, "footnote": 18}
+TEMPLATE_PROFILE_REQUIRED = (
+    "color_palette", "typography", "spacing", "composition_language",
+    "image_treatment", "chart_style", "icon_style", "page_rhythm",
+    "layout_principles", "prohibited_behaviors",
+)
+
+
+def _load_sibling(name: str):
+    path = Path(__file__).with_name(f"{name}.py")
+    spec = importlib.util.spec_from_file_location(f"ppt_creaters_{name}_validator", path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def _read(path: Path, errors: list[str]) -> str:
@@ -140,6 +158,145 @@ def _check_config(root: Path, errors: list[str]) -> tuple[dict[str, str], int]:
     return values, slide_count
 
 
+def _mapping_file(path: Path, errors: list[str]) -> dict[str, object]:
+    if not path.is_file():
+        return {}
+    text = _read(path, errors)
+    try:
+        payload = json.loads(text)
+        return dict(payload) if isinstance(payload, dict) else {}
+    except json.JSONDecodeError:
+        result: dict[str, object] = {}
+        for line in text.splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or ":" not in stripped:
+                continue
+            key, value = stripped.split(":", 1)
+            value = value.strip().strip("\"'")
+            try:
+                result[key.strip()] = json.loads(value)
+            except json.JSONDecodeError:
+                result[key.strip()] = value
+        return result
+
+
+def _check_selection_gate(root: Path, values: dict[str, str], errors: list[str]) -> None:
+    """Validate the P0-A configuration and user-confirmed style gates."""
+    confirmed_path = root / "deck-config.confirmed.yaml"
+    if not confirmed_path.is_file():
+        errors.append("Missing deck-config.confirmed.yaml; configuration confirmation gate has not completed.")
+    else:
+        confirmed = _mapping_file(confirmed_path, errors)
+        method = str(confirmed.get("confirmation_method", ""))
+        mode = values.get("template_application_mode", "style-reference")
+        if mode == "strict-template":
+            selected_by = str(confirmed.get("template_application_mode_selected_by", ""))
+            provided = {item.strip() for item in str(confirmed.get("user_provided_fields", "")).split(",") if item.strip()}
+            if method == "auto_inference" or not (selected_by == "user" or "template_application_mode" in provided):
+                errors.append("strict-template requires explicit user selection; upload or AI inference is not enough.")
+        workflow = values.get("workflow_mode")
+        selection = values.get("selection_mode")
+        if workflow == "auto":
+            if method != "auto_inference":
+                errors.append("auto mode requires confirmation_method: auto_inference in deck-config.confirmed.yaml.")
+            report = root / "config-selection-report.md"
+            report_text = _read(report, errors) if report.is_file() else ""
+            if "auto_inference" not in report_text:
+                errors.append("auto mode must record auto_inference in config-selection-report.md.")
+        else:
+            if method != "user_confirmed":
+                errors.append("manual/direct mode requires confirmation_method: user_confirmed.")
+            if confirmed.get("confirmed_by") != "user":
+                errors.append("manual mode requires deck-config.confirmed.yaml confirmed_by: user.")
+            sources = confirmed.get("configuration_source")
+            required_source_fields = {
+                "presentation_type", "visual_style", "presentation_effect", "template_application_mode",
+                "output_mode", "notes_mode", "target_duration_minutes", "content_density",
+            }
+            if not isinstance(sources, dict) or set(sources) < required_source_fields:
+                errors.append("manual mode requires configuration_source for all eight confirmed fields.")
+            for field in ("presentation_type", "visual_style", "presentation_effect", "workflow_mode", "template_application_mode", "output_mode", "notes_mode", "target_duration_minutes", "content_density"):
+                if field not in confirmed:
+                    errors.append(f"deck-config.confirmed.yaml is missing confirmed field {field}.")
+            if selection == "direct":
+                provided = {item.strip() for item in str(confirmed.get("user_provided_fields", "")).split(",") if item.strip()}
+                required = {"presentation_type", "visual_style", "presentation_effect", "workflow_mode", "selection_mode", "template_application_mode", "output_mode", "notes_mode", "target_duration_minutes", "content_density"}
+                missing = sorted(required - provided)
+                if missing:
+                    errors.append("direct mode confirmation is missing explicit user fields: " + ", ".join(missing) + ".")
+
+    state_path = root / "build-state.yaml"
+    if not state_path.is_file():
+        errors.append("Missing build-state.yaml; final publication requires persistent workflow state.")
+    else:
+        state = _mapping_file(state_path, errors)
+        status = state.get("build_status")
+        if status != "completed":
+            errors.append(f"build-state.yaml blocks publication with build_status: {status}; require completed.")
+        history = state.get("transition_history")
+        if not isinstance(history, list) or not history:
+            errors.append("build-state.yaml requires non-empty audited transition_history.")
+        else:
+            last = history[-1]
+            if not isinstance(last, dict) or last.get("to") != "completed" or last.get("actor") != "orchestrator":
+                errors.append("completed transition must be recorded by orchestrator.")
+            if not isinstance(last.get("evidence_files"), list) or not last.get("evidence_files"):
+                errors.append("completed transition requires evidence_files.")
+
+    if values.get("workflow_mode") != "manual":
+        return
+    candidates = sorted(path for path in (root / "style-candidates").glob("candidate-*") if path.is_dir())
+    if not 2 <= len(candidates) <= 4:
+        errors.append("manual mode requires 2-4 style-candidates/candidate-* directories.")
+    for candidate in candidates:
+        for required in ("cover.png", "section.png", "content.png", "result.png", "style-profile.yaml"):
+            if not (candidate / required).is_file():
+                errors.append(f"{candidate.name} is missing {required}.")
+    selected_path = root / "selected-style.yaml"
+    if not selected_path.is_file():
+        errors.append("manual mode requires selected-style.yaml after user style selection.")
+        return
+    selected = _mapping_file(selected_path, errors)
+    for field in ("selected_candidate", "selected_by", "confirmation_timestamp", "candidate_profile_path", "template_profile"):
+        if field not in selected:
+            errors.append(f"selected-style.yaml is missing required field {field}.")
+    if selected.get("selected_by") != "user":
+        errors.append("selected-style.yaml selected_by must be user; AI selection is not valid.")
+    names = {candidate.name for candidate in candidates}
+    if selected.get("selected_candidate") not in names:
+        errors.append("selected-style.yaml selected_candidate does not match a candidate directory.")
+    candidate_errors = _load_sibling("artifact_guards").validate_style_candidates(root)
+    errors.extend(candidate_errors)
+
+
+def _check_template_profile(root: Path, errors: list[str]) -> None:
+    """Require a semantic profile whenever a build imports a PPTX template."""
+    config_path = root / "deck-config.yaml"
+    config = _read(config_path, errors) if config_path.is_file() else ""
+    template_source = _scalar(config, "template_source")
+    if not template_source:
+        return
+    source_path = (root / template_source).resolve()
+    if not source_path.is_file():
+        errors.append(f"template_source does not resolve to a file: {template_source}.")
+        return
+    profile_ref = _scalar(config, "template_profile")
+    if not profile_ref:
+        errors.append("Imported templates require deck-config.yaml template_profile before page generation.")
+        return
+    profile_path = (root / profile_ref).resolve()
+    expected = (source_path.parent.parent / "profiles" / source_path.stem / "style-profile.yaml").resolve()
+    if profile_path != expected:
+        errors.append(f"template_profile must be {expected}, not {profile_path}.")
+    if not profile_path.is_file():
+        errors.append(f"Missing imported-template style profile: {profile_path}.")
+        return
+    profile = _read(profile_path, errors)
+    for field in TEMPLATE_PROFILE_REQUIRED:
+        if not _has_key(profile, field):
+            errors.append(f"style-profile.yaml is missing required section {field}.")
+
+
 def _role_block(text: str, role: str) -> str:
     match = re.search(rf"(?ms)^  {re.escape(role)}:\s*\n(.*?)(?=^  [A-Za-z0-9_-]+:\s*$|\Z)", text)
     return match.group(1) if match else ""
@@ -208,11 +365,20 @@ def _check_specs_and_data(root: Path, slide_count: int, errors: list[str]) -> tu
         for field in SPEC_REQUIRED:
             if not _has_key(text, field):
                 errors.append(f"{path.name} is missing required field {field}.")
+        mode = _scalar(text, "template_application_mode") or "style-reference"
+        flexibility = (_scalar(text, "layout_flexibility") or "").lower()
+        reuse_mode = (_scalar(text, "reuse_mode") or "").lower()
+        if mode == "style-reference" and reuse_mode == "duplicate-slide":
+            errors.append(f"{path.name} style-reference cannot use duplicate-slide.")
+        if mode == "style-reference" and ("fixed-source-textbox" in flexibility or flexibility.strip() == "fixed"):
+            errors.append(f"{path.name} source textboxes cannot fix layout flexibility.")
+        if mode == "style-reference" and (_scalar(text, "content_density") or "").lower() == "over-capacity" and not any(token in flexibility for token in ("recompose", "split", "add", "resize")):
+            errors.append(f"{path.name} over-capacity content requires recompose or split.")
         for metric in _block_items(text, "referenced_metrics"):
             referenced.add(metric)
             if metric not in known_metrics:
                 errors.append(f"{path.name} references unknown metric {metric}.")
-        notes_file = _scalar(text, "file")
+        notes_file = _scalar(text, "speaker_notes_path") or _scalar(text, "file")
         if not notes_file:
             errors.append(f"{path.name} must point speaker_notes.file to a note file.")
     _status_report(root, "data-qa-report.md", errors)
@@ -257,6 +423,14 @@ def _check_output(root: Path, values: dict[str, str], slide_count: int, errors: 
             errors.append("production-image requires one final-images/slide-XX.png for every slide.")
         if not (root / "presentation.pptx").is_file():
             errors.append("production-image requires presentation.pptx.")
+        else:
+            qa = _mapping_file(root / "final-images-qa.json", errors)
+            if qa.get("status") != "pass" or str(qa.get("image_count")) != str(slide_count):
+                errors.append("final-images-qa.json must pass with image_count equal to slide count.")
+            note_errors = _load_sibling("presentation_guard").validate_presentation(
+                root / "presentation.pptx", root / "speaker-notes", slide_count=slide_count
+            )
+            errors.extend(note_errors)
     elif mode == "hybrid-editable":
         if not (root / "presentation.pptx").is_file():
             errors.append("hybrid-editable requires presentation.pptx as the editable output contract.")
@@ -284,6 +458,8 @@ def validate_p0(root: Path) -> list[str]:
     if not root.is_dir():
         return [f"Output directory does not exist: {root}."]
     values, slide_count = _check_config(root, errors)
+    _check_selection_gate(root, values, errors)
+    _check_template_profile(root, errors)
     _check_typography(root, errors)
     known_metrics, _ = _check_specs_and_data(root, slide_count, errors)
     _check_notes(root, values, slide_count, known_metrics, errors)

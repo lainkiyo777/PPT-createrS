@@ -1,0 +1,20 @@
+name: preview
+version: 1
+minimum_score: 85
+maximum_critical_failures: 0
+dimensions:
+  workflow_compliance: 20
+  content_accuracy: 15
+  narrative_structure: 15
+  visual_quality: 20
+  typography: 10
+  data_integrity: 5
+  speaker_notes: 5
+  template_style_alignment: 10
+critical_failures:
+  - manual_mode_skipped_user_selection
+  - image2_not_actually_called
+  - selected_by_not_user
+  - slide_count_mismatch
+  - presentation_fallback_after_image2_failure
+  - execution_crossed_human_gate

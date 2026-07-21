@@ -1,0 +1,6 @@
+RED phase: before implementation
+Command: python -m unittest skills.ppt-creaters.tests.test_template_application_mode
+Result: FAIL
+Ran: 10 tests
+Failure: all 10 tests errored because scripts/template_policy.py did not exist (FileNotFoundError).
+Interpretation: the requested template-application policy was not yet implemented.

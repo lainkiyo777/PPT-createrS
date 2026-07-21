@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PPT Reviewer Evaluation",
+  "type": "object",
+  "required": [
+    "review_id",
+    "artifact_version",
+    "total_score",
+    "passed",
+    "critical_failures",
+    "dimension_scores",
+    "issues",
+    "revision_priority"
+  ],
+  "properties": {
+    "review_id": {"type": "string", "minLength": 1},
+    "artifact_version": {"type": "string", "minLength": 1},
+    "total_score": {"type": "number", "minimum": 0, "maximum": 100},
+    "passed": {"type": "boolean"},
+    "critical_failures": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "dimension_scores": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0, "maximum": 100}},
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity", "criterion", "slides", "finding", "evidence", "required_fix"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "severity": {"enum": ["critical", "major", "minor"]},
+          "criterion": {"type": "string", "minLength": 1},
+          "slides": {"type": "array", "items": {"type": "integer", "minimum": 1}},
+          "finding": {"type": "string", "minLength": 1},
+          "evidence": {"type": "string", "minLength": 1},
+          "required_fix": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "revision_priority": {"type": "array"}
+  },
+  "additionalProperties": false
+}

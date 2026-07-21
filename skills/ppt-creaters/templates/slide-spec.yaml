@@ -2,20 +2,36 @@ slide_number: 1
 page_type: cover
 title: Exact page title
 key_message: One sentence that the audience must remember.
+template_application_mode: style-reference
+dominant_visual: Name the page's semantic visual anchor.
+layout_flexibility: recompose; move; resize; add or remove visual elements
+visual_inheritance: Reference the shared palette, typography, spacing, geometry, and image treatment.
+prohibited_inheritance: Do not copy source text, exact textbox coordinates, or source-slide composition.
 font_roles:
   title: cover_title
   body: body
   metrics: key_metric
 layout:
   structure: hero
+  reuse_mode: new-composition
+visual_style:
+  palette: blue/cyan from the imported style profile
+  typography: Chinese sans with a clear title/body scale
 visual:
   style: technology-dark
   effect: keynote
 image_prompt: Describe the complete slide composition and exact visual treatment.
+style_reference_prompt: Learn the reference template's visual language without copying source slides or fixed textbox coordinates.
+reference_images:
+  - references/template-previews/page-01.png
+deterministic_text_overlay: Define exact Chinese titles, body copy, numbers, labels, sources, and footnotes rendered by code.
+deterministic_chart_overlay: Define charts and tables rendered by code from data/chart-data; use none only when the page has no chart or table.
 source_assets: []
+dependencies: []
 referenced_metrics: []
 speaker_notes:
   file: ../speaker-notes/slide-01.md
+speaker_notes_path: ../speaker-notes/slide-01.md
 qa_checklist:
   - title_not_overflow
   - body_font_above_minimum

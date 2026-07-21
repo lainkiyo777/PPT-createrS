@@ -1,0 +1,29 @@
+template_application_mode: style-reference
+source_slide_reference: null
+visual_inheritance: "blue/cyan palette, Chinese sans hierarchy, generous whitespace, geometric anchors, restrained image treatment"
+prohibited_inheritance: "source Chinese, source text, exact source textbox coordinates, duplicate-slide mapping"
+image_prompt: >-
+  Learn the blue-template visual language from the style profile and approved template
+  preview references. Do not copy source Chinese, source text, or exact source
+  textbox layout. Recompose the page for its current semantics. The image model
+  handles background, composition, decorative geometry, and scene imagery. A
+  deterministic renderer overlays exact Chinese, key numbers, tables, and charts.
+source_assets: []
+dependencies:
+  - "skills/ppt-creaters/references/deck-library/profiles/蓝色模板/style-profile.yaml"
+qa_checklist:
+  - "same visual inheritance as the other test pages"
+  - "new composition is visibly different from source slides"
+  - "title and key message remain readable at presentation distance"
+slide_id: slide-03
+page_type: conclusion
+title: "结论与下一步"
+key_message: "Use the validated model as the operational baseline and prioritize the next verification loop."
+dominant_visual: "three-point thesis with one visual anchor and a clear next-action path"
+layout_flexibility: "recompose into low-density thesis layout; enlarge priority statement; add one action path"
+composition_id: conclusion-recomposed
+layout:
+  reuse_mode: new-composition
+  structure: thesis-and-action
+  content_density: low
+  allowed_additions: [priority-anchor, action-path]

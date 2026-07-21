@@ -1,0 +1,24 @@
+name: final-delivery
+version: 1
+minimum_score: 85
+maximum_critical_failures: 0
+dimensions:
+  workflow_compliance: 15
+  content_accuracy: 15
+  narrative_structure: 10
+  visual_quality: 15
+  typography: 15
+  data_integrity: 10
+  speaker_notes: 10
+  template_style_alignment: 10
+critical_failures:
+  - manual_mode_skipped_user_selection
+  - image2_not_actually_called
+  - selected_by_not_user
+  - slide_count_mismatch
+  - key_data_conflicts_with_metrics
+  - typography_below_hard_minimum
+  - missing_real_notes_slides
+  - presentation_fallback_after_image2_failure
+  - presentation_participated_in_page_design
+  - execution_crossed_human_gate

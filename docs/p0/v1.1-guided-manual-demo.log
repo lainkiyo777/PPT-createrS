@@ -1,0 +1,30 @@
+Command: python skills/ppt-creaters/scripts/config_gate.py <output>
+
+[guided / configuration confirmation omitted]
+Configuration choices are required before outline or page generation.
+The uploaded template is a reference only; it is not a user confirmation.
+presentation_type (recommended: 'technical-report')
+  1) research-report
+  2) technical-report
+  3) introductory
+  4) academic-defense
+  5) product-solution
+  6) executive-summary
+  7) training-course
+Select presentation_type by number (blank = wait): build_status: awaiting_configuration
+waiting for user configuration confirmation
+exit_code: 2
+deck-config.confirmed.yaml exists: False
+outline.md exists: False
+
+[manual / candidate selection omitted]
+Candidate styles are ready. Select one; no candidate is selected automatically.
+  1) candidate-a (cover, section, content, result, profile)
+  2) candidate-b (cover, section, content, result, profile)
+Select candidate by number (blank = wait): build_status: awaiting_style_selection
+waiting for user style selection
+exit_code: 2
+selected-style.yaml exists: False
+presentation.pptx exists: False
+
+The process stops at awaiting_configuration / awaiting_style_selection; no downstream artifact is generated.

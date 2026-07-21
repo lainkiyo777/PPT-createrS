@@ -1,0 +1,28 @@
+template_application_mode: style-reference
+source_slide_reference: null
+visual_inheritance: "blue/cyan palette, Chinese sans hierarchy, generous whitespace, geometric anchors, restrained image treatment"
+prohibited_inheritance: "source Chinese, source text, exact source textbox coordinates, duplicate-slide mapping"
+image_prompt: >-
+  Learn the blue-template visual language from the style profile and approved template
+  preview references. Do not copy source Chinese, source text, or exact source
+  textbox layout. Recompose the page for its current semantics. The image model
+  handles background, composition, decorative geometry, and scene imagery. A
+  deterministic renderer overlays exact Chinese, key numbers, tables, and charts.
+source_assets: []
+dependencies:
+  - "skills/ppt-creaters/references/deck-library/profiles/蓝色模板/style-profile.yaml"
+qa_checklist:
+  - "same visual inheritance as the other test pages"
+  - "new composition is visibly different from source slides"
+  - "title and key message remain readable at presentation distance"
+slide_id: slide-02
+page_type: system-architecture
+title: "系统架构"
+key_message: "The forecasting pipeline connects data, representation, prediction, and validation through explicit interfaces."
+dominant_visual: "new architecture nodes and directional arrows with input/output labels"
+layout_flexibility: "recompose into a wide flow; add nodes; add arrows; resize modules; change column count"
+composition_id: architecture-recomposed
+layout:
+  reuse_mode: new-composition
+  structure: horizontal-architecture-flow
+  allowed_additions: [nodes, arrows, inputs, outputs, stage-boundaries]
