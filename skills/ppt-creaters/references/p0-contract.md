@@ -1,6 +1,6 @@
 # P0 Contract Reference
 
-This reference is the executable contract behind `SKILL.md` v1.2.0. It keeps detailed schemas out of the trigger document while preserving deterministic validation.
+This reference is the executable contract behind `SKILL.md` 2.1.0. It keeps detailed schemas out of the trigger document while preserving deterministic validation.
 
 ## Configuration
 
@@ -14,6 +14,7 @@ workflow_mode: manual
 selection_mode: guided
 template_application_mode: style-reference
 output_mode: production-image
+visual_generator: image_gen
 notes_mode: full
 content_density: medium
 target_duration_minutes: 20
@@ -25,7 +26,7 @@ classification_reason: >
   Explain the classification using source evidence.
 ```
 
-The validator accepts only the enumerations documented in `SKILL.md`. `style_confidence` is in `[0, 1]`; `target_duration_minutes` is positive; `aspect_ratio` is `16:9`.
+`visual_generator` records the actual host adapter name (`image_gen` or `image2`); it is audited in the image-generation manifest and is not a model fallback. The validator accepts only the enumerations documented in `SKILL.md`. `style_confidence` is in `[0, 1]`; `target_duration_minutes` is positive; `aspect_ratio` is `16:9`.
 
 `deck-brief.yaml` must include at least:
 
@@ -91,7 +92,7 @@ build_status: awaiting_configuration
 
 A GUI selector is optional. A numbered text prompt is the required fallback. Recommendations may be displayed but cannot be accepted automatically.
 
-For `workflow_mode: manual`, call `image2` and create exactly `candidate-a`, `candidate-b`, and `candidate-c`. Each contains `cover.png`, `section.png`, `content.png`, `result.png`, and `style-profile.yaml`. The candidates interpret the same template as university research clean, technology launch, and data technical report respectively. Then wait for a user choice. Before that choice the only valid state is:
+For `workflow_mode: manual`, call the configured `visual_generator` adapter and create exactly `candidate-a`, `candidate-b`, and `candidate-c`. Each contains `cover.png`, `section.png`, `content.png`, `result.png`, and `style-profile.yaml`. The candidates interpret the same template as university research clean, technology launch, and data technical report respectively. Then wait for a user choice. Before that choice the only valid state is:
 
 ```text
 build_status: awaiting_style_selection
@@ -108,7 +109,7 @@ candidate_profile_path: style-candidates/candidate-b/style-profile.yaml
 
 `selected_by: ai`, missing confirmation metadata, or an uploaded template must never satisfy this gate. `workflow_mode: auto` may skip prompting only when `deck-config.confirmed.yaml` records `confirmation_method: auto_inference` and the selection report records the inferred values. `selection_mode: direct` requires proof that every required field was explicitly provided by the user.
 
-Every image2 call must be appended to `image-generation-manifest.json` with `tool_name`, `prompt_path`, `reference_images`, `output_path`, `timestamp`, and `status`. Candidate validation fails if the manifest is missing, a candidate output lacks a successful image2 record, or a different tool created it. An unavailable image2 adapter is a hard failure; `presentation` is never a fallback image generator.
+Every visual-generator call must be appended to `image-generation-manifest.json` with `tool_name`, `model_or_tool_version`, `prompt_path`, `reference_images`, `output_path`, `timestamp`, and `status`. Candidate validation fails if the manifest is missing, a candidate output lacks a successful record from the configured adapter, or a different tool created it. An unavailable visual-generator adapter is a hard failure; `presentation` is never a fallback image generator.
 
 ## Template application mode
 
@@ -141,6 +142,20 @@ There must be exactly three candidates. The user confirmation is represented by 
 ## Style-reference image-first rule
 
 In `style-reference`, generate independent slide specs from the outline, choose a `dominant_visual` for each page, and build prompts from the style profile plus approved template preview references. Preview images must be reviewed before `final-images`. The model may generate backgrounds, composition, decorative geometry, and scene imagery; exact Chinese, key numbers, tables, and charts must be deterministic overlays or code-rendered assets.
+
+### v2.1 template-reference route
+
+For a request to beautify a deck while referring to its template, the default route is:
+
+```text
+PPTX template → style-profile.yaml + reference-slides/source-slide-XX.png
+→ outline → independent slide specs → per-page image_gen previews
+→ whole-set preview review → final-images → full-slide image-only PPTX → QA
+```
+
+The source page screenshot is a visual reference, not a page background and not a coordinate contract. `style-reference` must preserve the template's visual language while recomposing each page for current semantics. `adaptive-layout` may further move, resize, delete, or add text boxes, charts, nodes, arrows, and process structures. `strict-template` remains opt-in only after explicit user confirmation.
+
+The host must call the actual configured `image_gen`/`image2` adapter and record provenance. The repository provides no fictional image command. If the adapter is unavailable, the run stops with a clear error and a complete prompt/task handoff. Use `scripts/template_reference_pipeline.py` to verify that reference, preview, and final image counts match, all assets are 16:9, and the assembled PPTX contains one full-slide picture per page.
 
 ## Typography
 

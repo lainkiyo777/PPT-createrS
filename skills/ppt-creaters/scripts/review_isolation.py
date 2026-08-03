@@ -36,7 +36,7 @@ FORBIDDEN_CONTEXT_TOKENS = (
     "producer-model",
     "producer-summary",
 )
-MUTATING_REVIEWER_TOOLS = {"image2", "presentation", "pptx", "filesystem_write", "apply_patch"}
+MUTATING_REVIEWER_TOOLS = {"image2", "image_gen", "presentation", "pptx", "filesystem_write", "apply_patch"}
 
 
 def _is_relative_to(path: Path, root: Path) -> bool:

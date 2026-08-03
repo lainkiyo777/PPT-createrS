@@ -22,7 +22,7 @@
         "outline_and_narrative",
         "template_style_abstraction",
         "complex_slide_specs",
-        "image2_prompt_design",
+        "visual_generator_prompt_design",
         "revise_from_structured_issues"
       ],
       "prohibited": ["modify_reviewer_results", "self_release", "cross_human_gate"]
@@ -64,7 +64,7 @@
         "read_producer_conversation",
         "read_producer_self_assessment",
         "modify_generated_files",
-        "call_image2",
+        "call_visual_generator",
         "call_presentation_tools"
       ]
     },
@@ -78,11 +78,11 @@
         "verify_data_consistency",
         "judge_delivery_quality"
       ],
-      "prohibited": ["modify_generated_files", "call_image2", "call_presentation_tools"]
+      "prohibited": ["modify_generated_files", "call_visual_generator", "call_presentation_tools"]
     }
   },
   "tools": {
-    "visual_generator": "image2",
+    "visual_generator": "image_gen",
     "chart_renderer": "deterministic_code",
     "text_renderer": "deterministic_code",
     "ppt_assembler": "deterministic_code_or_presentation_assembly_only",

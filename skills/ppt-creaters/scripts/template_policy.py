@@ -6,11 +6,48 @@ strict-template is an explicit user choice and never an inference from upload.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 
 TEMPLATE_APPLICATION_MODES = ("style-reference", "adaptive-layout", "strict-template")
 DEFAULT_TEMPLATE_APPLICATION_MODE = "style-reference"
+REQUIRED_TEMPLATE_PROFILE_SECTIONS = (
+    "color_palette", "typography", "spacing", "composition_language",
+    "image_treatment", "chart_style", "icon_style", "page_rhythm",
+    "layout_principles", "prohibited_behaviors",
+)
+
+
+def validate_imported_template_profile(output_dir: Path, config: Mapping[str, Any]) -> list[str]:
+    """Validate an imported PPTX and its semantic profile before generation."""
+    source_ref = config.get("template_source")
+    if not source_ref:
+        return []
+    root = Path(output_dir).resolve()
+    source = Path(str(source_ref))
+    source = source if source.is_absolute() else root / source
+    source = source.resolve()
+    errors: list[str] = []
+    if not source.is_file():
+        return [f"template_source does not resolve to a file: {source_ref}"]
+    expected = (source.parent.parent / "profiles" / source.stem / "style-profile.yaml").resolve()
+    profile_ref = config.get("template_profile")
+    if not profile_ref:
+        return [f"imported template requires template_profile at {expected}"]
+    profile = Path(str(profile_ref))
+    profile = profile if profile.is_absolute() else root / profile
+    profile = profile.resolve()
+    if profile != expected:
+        errors.append(f"template_profile must resolve to {expected}, got {profile}")
+    if not profile.is_file():
+        errors.append(f"missing imported-template style profile: {profile}")
+        return errors
+    text = profile.read_text(encoding="utf-8")
+    for section in REQUIRED_TEMPLATE_PROFILE_SECTIONS:
+        if not any(line.startswith(section + ":") or line.startswith("  " + section + ":") for line in text.splitlines()):
+            errors.append(f"style-profile.yaml is missing required section: {section}")
+    return errors
 
 
 def normalize_template_application_mode(config: Mapping[str, Any] | None) -> str:

@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
+import importlib.util
 import re
 import struct
 import sys
@@ -261,11 +263,120 @@ def _validate_pptx(root: Path, page_count: int, errors: list[str]) -> None:
         errors.append(f"presentation.pptx cannot be opened as a PPTX archive: {exc}.")
 
 
+def _plain_mapping(path: Path) -> dict[str, object]:
+    if not path.is_file():
+        return {}
+    text = path.read_text(encoding="utf-8")
+    try:
+        value = json.loads(text)
+        return dict(value) if isinstance(value, dict) else {}
+    except json.JSONDecodeError:
+        result: dict[str, object] = {}
+        for raw in text.splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#") or ":" not in line:
+                continue
+            key, value = line.split(":", 1)
+            value = value.strip().strip("\"'")
+            result[key.strip()] = value
+        return result
+
+
+def _v2_output(root: Path) -> list[str]:
+    errors: list[str] = []
+    required = {
+        "build-state.yaml", "build-status.json", "deck-config.yaml", "deck-config.confirmed.yaml",
+        "deck-brief.yaml", "model-routing-manifest.json", "image-generation-manifest.json",
+        "outline.md", "slide-specs", "preview-images", "final-images", "presentation.pptx",
+        "qa-report.md", "generation-report.md",
+    }
+    actual = {path.name for path in root.iterdir()}
+    for missing in sorted(required - actual):
+        errors.append(f"v2 output is missing {missing}")
+    config = _plain_mapping(root / "deck-config.confirmed.yaml") or _plain_mapping(root / "deck-config.yaml")
+    template_policy_path = Path(__file__).with_name("template_policy.py")
+    template_spec = importlib.util.spec_from_file_location("ppt_creaters_pipeline_template_policy", template_policy_path)
+    template_policy = importlib.util.module_from_spec(template_spec)
+    template_spec.loader.exec_module(template_policy)
+    errors.extend(template_policy.validate_imported_template_profile(root, config))
+    errors.extend(template_policy.validate_config_template_mode(
+        config,
+        confirmation_method=str(config.get("confirmation_method", "")),
+        explicit_fields={"template_application_mode"} if config.get("confirmed_by") == "user" else set(),
+    ))
+    state = _plain_mapping(root / "build-state.yaml")
+    if state.get("build_status") != "completed":
+        errors.append("build-state.yaml must declare build_status: completed")
+    mirror = _plain_mapping(root / "build-status.json")
+    if mirror.get("build_status") not in {"completed", "final_qa"}:
+        errors.append("build-status.json must mirror a completed/final_qa runtime state")
+    specs_dir = root / "slide-specs"
+    specs = sorted(specs_dir.glob("slide-*.yaml")) if specs_dir.is_dir() else []
+    expected = [f"slide-{index:02d}.yaml" for index in range(1, len(specs) + 1)]
+    if [path.name for path in specs] != expected or not specs:
+        errors.append("v2 slide-specs must contain contiguous slide-01.yaml..slide-NN.yaml files")
+    fields = ("slide_number", "page_type", "title", "key_message", "dominant_visual", "template_application_mode", "style_reference_prompt", "image_prompt", "reference_images", "layout_flexibility", "visual_inheritance", "prohibited_inheritance", "deterministic_text_overlay", "deterministic_chart_overlay", "referenced_metrics", "speaker_notes_path", "qa_checklist")
+    for spec in specs:
+        text = spec.read_text(encoding="utf-8")
+        for field in fields:
+            if not re.search(rf"(?m)^{re.escape(field)}:\s*", text):
+                errors.append(f"{spec.name} is missing {field}")
+    slide_count = len(specs)
+    for directory_name in ("preview-images", "final-images"):
+        directory = root / directory_name
+        files = sorted(directory.glob("slide-*.png")) if directory.is_dir() else []
+        expected_names = [f"slide-{index:02d}.png" for index in range(1, slide_count + 1)]
+        if [path.name for path in files] != expected_names:
+            errors.append(f"{directory_name} must contain exactly {slide_count} slide PNGs")
+        for path in files:
+            size = _png_size(path)
+            if size is None:
+                errors.append(f"{directory_name}/{path.name} is not a valid PNG")
+            elif directory_name == "final-images" and (size[0] < 1920 or size[1] < 1080):
+                errors.append(f"{directory_name}/{path.name} is below 1920x1080")
+    qa = _plain_mapping(root / "final-images-qa.json")
+    if qa.get("status") != "pass" or str(qa.get("image_count")) != str(slide_count):
+        errors.append("final-images-qa.json must pass with image_count equal to slide count")
+    manifest_path = root / "image-generation-manifest.json"
+    if not manifest_path.is_file():
+        errors.append("image-generation-manifest.json is required")
+    else:
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            calls = manifest.get("calls", []) if isinstance(manifest, dict) else []
+            if not calls or any(call.get("success") is not True or not call.get("tool_name") for call in calls if isinstance(call, dict)):
+                errors.append("image-generation-manifest.json must contain successful named adapter calls")
+            expected_tool = str(config.get("visual_generator") or "image2")
+            mismatched = [
+                str(call.get("tool_name")) for call in calls
+                if isinstance(call, dict) and call.get("tool_name") != expected_tool
+            ]
+            if mismatched:
+                errors.append(
+                    f"image-generation-manifest.json visual generator mismatch: configured {expected_tool}, found {sorted(set(mismatched))}"
+                )
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            errors.append("image-generation-manifest.json is invalid JSON")
+    for filename, expected_status in (("qa-report.md", "pass"), ("generation-report.md", "completed")):
+        report = _frontmatter(root / filename) if (root / filename).is_file() else {}
+        if report.get("status") != expected_status:
+            errors.append(f"{filename} must declare status: {expected_status}")
+    guard_path = Path(__file__).with_name("presentation_guard.py")
+    spec = importlib.util.spec_from_file_location("ppt_creaters_pipeline_presentation_guard", guard_path)
+    guard = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(guard)
+    if (root / "presentation.pptx").is_file():
+        errors.extend(guard.validate_presentation(root / "presentation.pptx", root / "speaker-notes", slide_count=slide_count))
+    return errors
+
+
 def validate_output(root: Path) -> list[str]:
     root = Path(root)
     errors: list[str] = []
     if not root.is_dir():
         return [f"Output directory does not exist: {root}."]
+    if (root / "build-state.yaml").is_file() or any((root / "slide-specs").glob("slide-*.yaml")):
+        return _v2_output(root)
 
     actual_entries = {path.name for path in root.iterdir()}
     for missing in sorted(REQUIRED_ROOT_ENTRIES - actual_entries):

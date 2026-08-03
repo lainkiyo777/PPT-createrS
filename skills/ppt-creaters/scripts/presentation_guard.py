@@ -11,6 +11,15 @@ from xml.etree import ElementTree as ET
 
 
 SLIDE_SIZE = (12192000, 6858000)
+
+
+def is_valid_16_9_size(actual: tuple[int | None, int | None]) -> bool:
+    """Accept the one-EMU rounding emitted by common python-pptx versions."""
+    if actual[0] is None or actual[1] is None:
+        return False
+    return abs(int(actual[0]) - SLIDE_SIZE[0]) <= 1 and abs(int(actual[1]) - SLIDE_SIZE[1]) <= 1
+
+
 REL_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
 
 
@@ -36,9 +45,11 @@ def _read_mapping(path: Path) -> dict[str, object]:
 
 def assert_assembly_ready(output_dir: Path, *, slide_count: int) -> None:
     output_dir = Path(output_dir)
+    config = _read_mapping(output_dir / "deck-config.confirmed.yaml") or _read_mapping(output_dir / "deck-config.yaml")
+    is_auto = config.get("workflow_mode") == "auto" and config.get("selection_mode") == "direct"
     selected = _read_mapping(output_dir / "selected-style.yaml")
-    if selected.get("selected_by") != "user":
-        raise PresentationBlocked("presentation requires selected-style.yaml selected_by: user")
+    if not is_auto and selected.get("selected_by") != "user":
+        raise PresentationBlocked("presentation requires selected-style.yaml selected_by: user for manual/guided mode")
     finals = sorted((output_dir / "final-images").glob("slide-*.png")) if (output_dir / "final-images").is_dir() else []
     expected_final_names = [f"slide-{index:02d}.png" for index in range(1, slide_count + 1)]
     if [path.name for path in finals] != expected_final_names:
@@ -108,8 +119,8 @@ def validate_presentation(pptx_path: Path, notes_dir: Path, *, slide_count: int)
                     presentation = ET.fromstring(archive.read("ppt/presentation.xml"))
                     size = next((node for node in presentation.iter() if _local(node.tag) == "sldSz"), None)
                     actual_size = (_int(size.get("cx")), _int(size.get("cy"))) if size is not None else (None, None)
-                    if actual_size != SLIDE_SIZE:
-                        errors.append(f"presentation slide size is {actual_size}; expected 16:9 {SLIDE_SIZE}")
+                    if not is_valid_16_9_size(actual_size):
+                        errors.append(f"presentation slide size is {actual_size}; expected 16:9 {SLIDE_SIZE} (?1 EMU rounding allowed)")
                 except ET.ParseError as exc:
                     errors.append(f"presentation XML is invalid: {exc}")
             if any(name.startswith("ppt/charts/") for name in names):
@@ -148,7 +159,8 @@ def validate_presentation(pptx_path: Path, notes_dir: Path, *, slide_count: int)
                         _int(ext.get("cx")) if ext is not None else None,
                         _int(ext.get("cy")) if ext is not None else None,
                     )
-                    if placement != (0, 0, *SLIDE_SIZE):
+                    expected_placement = (0, 0, *SLIDE_SIZE)
+                    if placement[:2] != (0, 0) or any(value is None or abs(int(value) - int(expected)) > 1 for value, expected in zip(placement[2:], expected_placement[2:])):
                         errors.append(f"slide {slide_number} picture is not full-slide: {placement}")
                 expected_note_path = notes_dir / f"slide-{slide_number:02d}.md"
                 if not expected_note_path.is_file():

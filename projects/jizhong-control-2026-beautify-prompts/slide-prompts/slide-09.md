@@ -1,0 +1,82 @@
+# Slide 09 prompt — template-preserving beautification
+
+- **Reference image:** `../reference-slides/source-slide-09.png`
+- **Template application mode:** `adaptive-layout` (high-fidelity, template language locked; composition flexible)
+- **Content policy:** exact source text; no copy editing, no new claims, no page-count change
+
+## Copy-ready prompt
+
+```text
+You are beautifying one existing PowerPoint slide, not redesigning the presentation from scratch.
+Use the attached reference image source-slide-09.png as the primary template and composition reference.
+Keep the 16:9 canvas, the white Huaneng template, blue title rule, upper-right logo, bottom blue rule, angled corner and page number.
+Use the source page as a high-fidelity template anchor, preserving the title band, logo, footer and visual rhythm. You may reorganize the composition for clarity: move or resize cards, change columns, merge or split content groups, and add architecture diagrams, flowcharts, swimlanes, timelines or restrained charts when they visualize existing source content.
+Do not add, remove, translate, summarize or reinterpret any information. Do not change any number, unit, symbol, label, metric, caveat or process step. A structural change is acceptable only if every source text item remains present and the page still reads as the same topic.
+Use Microsoft YaHei/微软雅黑 or the closest Chinese sans-serif. Keep title 28–32 pt equivalent, section labels 20–22 pt, body 17–19 pt where space allows, dense content at least 14 pt and footnotes 12–14 pt. Never solve overflow by shrinking all text.
+Use the source palette only: Huaneng blue, deep navy, black/dark gray, light blue-gray panels and restrained red emphasis. Keep flat white cards, thin blue borders, blue header bars and simple arrows. No dark tech background, neon glow, 3D effect, unrelated stock imagery, new logo or watermark.
+The image layer may polish background, cards, borders, non-text decoration and safe crops only. Render every Chinese phrase, number, table, chart label, arrow caption and page number later with a deterministic vector/text overlay from the verbatim list below. If space is tight, reflow within the existing zones; do not omit content.
+
+PAGE-SPECIFIC COMPOSITION
+Scenario two slide. Generate a three-lane process diagram for 作业前—作业中—作业后, with source materials entering the left, deterministic 输入/智能核验/输出 labels inside each lane, and a bottom evidence-gap feedback loop ending at 人工终核. Preserve the four source-material labels, every stage phrase and the exact 原文案例 sentence. Improve stage separation and connector clarity without changing process semantics.
+
+VERBATIM SOURCE TEXT — MUST BE PRESERVED EXACTLY
+- 研究内容和技术指标
+- 9
+- 典型场景二：主变引线接头过热检修全过程监督与验收
+- 现场/系统素材（待补充）
+- 处理前红外热像
+- 待插入真实素材
+- 移动记录仪作业画面
+- 待插入真实素材
+- 处理后红外热像
+- 待插入真实素材
+- 工作票/三措两案截图
+- 待插入真实素材
+- ① 作业前｜文件与安措预检
+- 输入
+- 缺陷工单、工作票
+- 三措两案、规程
+- 智能核验
+- 设备对象与故障部位
+- 安措位置、风险点
+- 许可与作业条件
+- 输出
+- 预检结果
+- 节点风险标签
+- ② 作业中｜视频过程监督
+- 输入
+- 移动视频记录仪
+- 固定视频
+- 智能核验
+- PPE、验电接地
+- 关键工序执行
+- 检修工艺质量
+- 输出
+- 过程片段
+- 时间戳与证据索引
+- ③ 作业后｜图文视频验收
+- 输入
+- 前后红外/照片
+- 视频、复测数据
+- 闭环文本
+- 智能核验
+- 图文视频一致性
+- 处理效果与证据完整性
+- 安措拆除确认
+- 输出
+- 验收建议
+- 待补证材料
+- 原文案例：闭环仅写“已处理”，但缺少处理后红外复测图或作业过程证据 → 标记“证据不足”
+- 智能预审
+- 证据缺口定位
+- 补证/整改
+- 人工终核
+- 结论回写
+- 样本反哺
+
+FINAL CHECKS
+- The finished page is recognizably the same source template and page family.
+- All verbatim text, numbers, symbols, source-material labels and page number are present and readable.
+- No title is awkwardly wrapped; no body text is microscopic; no card, table, arrow or frame collides with another.
+- No visual element changes the source meaning or implies a new claim.
+```

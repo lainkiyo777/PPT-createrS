@@ -46,8 +46,6 @@ def confirmed_manual_config():
         "notes_mode": "full",
         "target_duration_minutes": 20,
         "content_density": "medium",
-        "template_source": "blue-template.pptx",
-        "template_profile": "references/deck-library/profiles/blue-template/style-profile.yaml",
         "reference_images": ["blue-template-preview.png"],
     }
 
@@ -235,6 +233,18 @@ class P0WorkflowArchitectureTests(unittest.TestCase):
                 {"status": "reviewing", "stage": "review", "evidence_files": [evidence]},
                 {"status": "awaiting_preview_approval", "stage": "preview-approval", "evidence_files": [evidence]},
             ])
+
+    def test_13_style_selection_stops_for_external_slide_specs(self):
+        runner = load_script("workflow_runner")
+        adapter = FakeImage2()
+        config = confirmed_manual_config()
+        runner.run_once(self.output, config=config, input_fn=lambda _="": "", output_fn=lambda _: None)
+        values = iter(["2", "1", "2", "1", "1", "3", "3", "2", "yes"])
+        result = runner.run_once(self.output, config=config, input_fn=lambda _="": next(values), output_fn=lambda _: None, image2_adapter=adapter)
+        self.assertEqual("awaiting_style_selection", result.status)
+        result = runner.run_once(self.output, config=config, input_fn=lambda _="": "1", output_fn=lambda _: None, image2_adapter=adapter)
+        self.assertEqual("generating_slide_specs", result.status)
+        self.assertFalse((self.output / "presentation.pptx").exists())
 
     def test_12_image2_unavailable_fails_without_presentation_fallback(self):
         runner = load_script("workflow_runner")
