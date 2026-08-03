@@ -173,6 +173,15 @@ class MultiAgentContractTests(unittest.TestCase):
         with self.assertRaises(isolation.PermissionDenied):
             session.call_tool("image2")
 
+    def test_reviewer_has_no_configured_visual_generator_permission(self):
+        isolation = load_script("review_isolation")
+        self.assertIn("image_gen", isolation.MUTATING_REVIEWER_TOOLS)
+        pack = self.output / "review-pack"
+        pack.mkdir()
+        session = isolation.ReviewerSession(pack)
+        with self.assertRaises(isolation.PermissionDenied):
+            session.call_tool("image_gen")
+
     def test_reviewer_context_rejects_producer_logs(self):
         isolation = load_script("review_isolation")
         pack = self.output / "review-pack"

@@ -9,12 +9,12 @@ Use this reference when implementing or auditing orchestration, model routing, r
 | Route models | yes | no | no | no | records only |
 | Transition workflow state | yes | no | no | no | validates |
 | Create narrative/specs/prompts | delegates | yes | bounded tasks | no | schema-checks |
-| Generate visuals with image2 | delegates | requests | no | no | provenance-checks |
+| Generate visuals with configured visual generator | delegates | requests | no | no | provenance-checks |
 | Modify evaluation.json | persists returned JSON only | no | no | returns JSON without filesystem access | schema-checks |
 | Decide final PASS/FAIL | no | no | no | scores/findings only | yes |
 | Assemble PPTX | authorizes after prerequisites | no | no | no | assembly-only adapter |
 
-Keep Reviewer and Final Reviewer sessions isolated and read-only. Expose only paths inside a frozen review pack. Reject all Reviewer writes and calls to `image2`, `presentation`, PPTX mutation, filesystem-write, or `apply_patch`.
+Keep Reviewer and Final Reviewer sessions isolated and read-only. Expose only paths inside a frozen review pack. Reject all Reviewer writes and calls to the configured visual generator, `presentation`, PPTX mutation, filesystem-write, or `apply_patch`.
 
 ## 2. State contract
 
@@ -77,7 +77,7 @@ configuration_source:
   content_density: user|inferred|default
 ```
 
-Manual candidate generation requires twelve successful image2 calls: four page types for each of A, B, and C. Any missing/failed/non-image2 manifest call is fatal. User selection and preview approval are separate Gates.
+Manual candidate generation requires twelve successful calls to the configured visual generator: four page types for each of A, B, and C. Any missing/failed/mismatched manifest call is fatal. User selection and preview approval are separate Gates.
 
 ## 5. Review-pack boundary
 

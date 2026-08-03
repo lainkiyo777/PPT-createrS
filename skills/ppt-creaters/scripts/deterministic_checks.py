@@ -57,17 +57,22 @@ class DeterministicCheckRunner:
     def run(self, *, phase: str, slide_count: int, report_path: Path) -> dict[str, Any]:
         checks: dict[str, dict[str, Any]] = {}
 
+        config = _mapping(self.output_dir / "deck-config.confirmed.yaml") or _mapping(self.output_dir / "deck-config.yaml")
+        is_auto = config.get("workflow_mode") == "auto" and config.get("selection_mode") == "direct"
         selected = _mapping(self.output_dir / "selected-style.yaml")
         checks["selected_style"] = {
-            "passed": selected.get("selected_by") == "user",
-            "evidence": "selected-style.yaml",
+            "passed": True if is_auto else selected.get("selected_by") == "user",
+            "evidence": "deck-config.confirmed.yaml" if is_auto else "selected-style.yaml",
+            "mode": "auto/direct" if is_auto else "manual/guided",
         }
-        candidate_errors = _load_sibling("artifact_guards").validate_style_candidates(self.output_dir)
-        checks["image2_manifest"] = {
-            "passed": not candidate_errors,
+        candidate_errors = [] if is_auto else _load_sibling("artifact_guards").validate_style_candidates(self.output_dir)
+        visual_generator_check = {
+            "passed": True if is_auto else not candidate_errors,
             "errors": candidate_errors,
-            "evidence": "image-generation-manifest.json",
+            "evidence": "deck-config.confirmed.yaml" if is_auto else "image-generation-manifest.json",
         }
+        checks["visual_generator_manifest"] = visual_generator_check
+        checks["image2_manifest"] = visual_generator_check  # compatibility key for existing reports
 
         specs = sorted((self.output_dir / "slide-specs").glob("slide-*.yaml"))
         checks["slide_spec_count"] = {

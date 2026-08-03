@@ -5,6 +5,7 @@ workflow_mode: manual
 selection_mode: guided
 template_application_mode: style-reference
 output_mode: production-image
+visual_generator: image_gen
 notes_mode: full
 content_density: medium
 target_duration_minutes: 20

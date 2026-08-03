@@ -1,8 +1,11 @@
 from pathlib import Path
 import importlib.util
+import shutil
 import unittest
+import uuid
 
 SKILL_ROOT = Path(__file__).resolve().parents[1]
+TMP_ROOT = SKILL_ROOT / '.test-tmp-template-policy'
 POLICY_PATH = SKILL_ROOT / "scripts" / "template_policy.py"
 
 
@@ -28,6 +31,33 @@ def spec(mode="style-reference", **overrides):
 
 
 class TemplateApplicationModeTests(unittest.TestCase):
+    def test_imported_template_requires_profile_at_deterministic_path(self):
+        policy = load_policy()
+        root = TMP_ROOT / uuid.uuid4().hex
+        try:
+            source = root / 'references' / 'deck-library' / 'inbox' / 'blue.pptx'
+            source.parent.mkdir(parents=True)
+            source.write_bytes(b'pptx')
+            errors = policy.validate_imported_template_profile(root, {'template_source': 'references/deck-library/inbox/blue.pptx'})
+            self.assertTrue(any('template_profile' in error or 'style-profile' in error for error in errors))
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_imported_template_profile_passes_required_sections(self):
+        policy = load_policy()
+        root = TMP_ROOT / uuid.uuid4().hex
+        try:
+            source = root / 'references' / 'deck-library' / 'inbox' / 'blue.pptx'
+            profile = root / 'references' / 'deck-library' / 'profiles' / 'blue' / 'style-profile.yaml'
+            source.parent.mkdir(parents=True)
+            profile.parent.mkdir(parents=True)
+            source.write_bytes(b'pptx')
+            profile.write_text('\n'.join(f'{field}: {{}}' for field in ('color_palette','typography','spacing','composition_language','image_treatment','chart_style','icon_style','page_rhythm')) + '\nlayout_principles: []\nprohibited_behaviors: []\n', encoding='utf-8')
+            errors = policy.validate_imported_template_profile(root, {'template_source': 'references/deck-library/inbox/blue.pptx', 'template_profile': 'references/deck-library/profiles/blue/style-profile.yaml'})
+            self.assertEqual([], errors)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
     def test_style_reference_rejects_full_duplicate_slide_mapping(self):
         policy = load_policy()
         errors = policy.validate_slide_spec_template_mode(spec(layout={"reuse_mode": "duplicate-slide"}))

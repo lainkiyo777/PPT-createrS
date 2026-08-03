@@ -136,6 +136,43 @@ class PipelineValidationTests(unittest.TestCase):
     def tearDown(self) -> None:
         shutil.rmtree(self.case_root, ignore_errors=True)
 
+    def test_v2_output_requires_runtime_image_generation_manifest(self) -> None:
+        (self.output / 'build-state.yaml').write_text('build_status: completed\n', encoding='utf-8')
+        (self.output / 'slide-specs').mkdir()
+        (self.output / 'slide-specs' / 'slide-01.yaml').write_text('slide_number: 1\n', encoding='utf-8')
+        validator = load_validator()
+        errors = validator.validate_output(self.output)
+        self.assertTrue(any('image-generation-manifest' in error for error in errors))
+
+    def test_v2_output_enforces_imported_template_profile_gate(self) -> None:
+        (self.output / 'build-state.yaml').write_text('build_status: completed\n', encoding='utf-8')
+        (self.output / 'deck-config.yaml').write_text(
+            'template_source: blue.pptx\n' 'template_application_mode: style-reference\n',
+            encoding='utf-8',
+        )
+        (self.output / 'deck-config.confirmed.yaml').write_text(
+            'template_source: blue.pptx\n' 'template_application_mode: style-reference\n',
+            encoding='utf-8',
+        )
+        (self.output / 'blue.pptx').write_bytes(b'pptx')
+        (self.output / 'slide-specs').mkdir()
+        validator = load_validator()
+        errors = validator.validate_output(self.output)
+        self.assertTrue(any('template' in error.lower() and 'profile' in error.lower() for error in errors))
+
+    def test_v2_output_rejects_manifest_from_wrong_visual_generator(self) -> None:
+        (self.output / 'build-state.yaml').write_text('build_status: completed\n', encoding='utf-8')
+        (self.output / 'deck-config.confirmed.yaml').write_text(
+            'visual_generator: image_gen\n', encoding='utf-8'
+        )
+        (self.output / 'image-generation-manifest.json').write_text(
+            '{"calls":[{"tool_name":"image2","success":true}]}', encoding='utf-8'
+        )
+        (self.output / 'slide-specs').mkdir()
+        validator = load_validator()
+        errors = validator.validate_output(self.output)
+        self.assertTrue(any('visual generator' in error.lower() for error in errors))
+
     def test_valid_image_first_pipeline_passes(self) -> None:
         build_valid_output(self.output)
         validator = load_validator()

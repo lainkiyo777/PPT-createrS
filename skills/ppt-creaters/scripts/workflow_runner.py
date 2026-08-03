@@ -261,6 +261,19 @@ def _references(config: Mapping[str, Any]) -> list[str]:
     return [str(item) for item in refs if str(item).strip()]
 
 
+def _declared_visual_generator(output_dir: Path, adapter: Any = None) -> str:
+    """Resolve the configured visual adapter without accepting PPT tools."""
+    for filename in ("deck-config.confirmed.yaml", "deck-config.yaml"):
+        config = _read_mapping(Path(output_dir) / filename)
+        value = config.get("visual_generator") or config.get("image_tool")
+        if value:
+            return str(value)
+    actual = getattr(adapter, "tool_name", None)
+    if actual in {"image2", "image_gen"}:
+        return str(actual)
+    return "image2"
+
+
 def _load_manifest(output_dir: Path) -> dict[str, Any]:
     path = output_dir / "image-generation-manifest.json"
     if not path.is_file():
@@ -280,6 +293,7 @@ def _record_image_call(output_dir: Path, call: dict[str, Any]) -> None:
 
 
 def _call_image2(adapter: Any, *, output_dir: Path, prompt_path: Path, reference_images: list[str], output_path: Path) -> None:
+    required_tool = _declared_visual_generator(output_dir, adapter)
     relative_prompt = prompt_path.relative_to(output_dir).as_posix()
     relative_output = output_path.relative_to(output_dir).as_posix()
     call = {
@@ -293,14 +307,14 @@ def _call_image2(adapter: Any, *, output_dir: Path, prompt_path: Path, reference
         "error": None,
         "status": "failure",
     }
-    if adapter is None or getattr(adapter, "tool_name", None) != "image2":
-        call["error"] = "image2 adapter is unavailable or misidentified"
+    if adapter is None or getattr(adapter, "tool_name", None) != required_tool:
+        call["error"] = f"{required_tool} adapter is unavailable or misidentified; inject a host adapter with tool_name={required_tool}"
         _record_image_call(output_dir, call)
         raise RuntimeError(call["error"])
     try:
         success = adapter.generate(prompt_path=prompt_path, reference_images=reference_images, output_path=output_path)
         if success is False or not output_path.is_file():
-            raise RuntimeError("image2 did not create the requested output")
+            raise RuntimeError(f"{required_tool} did not create the requested output")
         call["success"] = True
         call["status"] = "success"
     except Exception as exc:
@@ -310,21 +324,22 @@ def _call_image2(adapter: Any, *, output_dir: Path, prompt_path: Path, reference
         _record_image_call(output_dir, call)
 
 
-def _candidate_prompt(style: str, page_type: str) -> str:
+def _candidate_prompt(style: str, page_type: str, *, visual_tool: str = "image2") -> str:
     return (
-        "Use image2. Learn the supplied blue template's color, typography language, whitespace, "
+        "Use {visual_tool}. Learn the supplied blue template's color, typography language, whitespace, "
         "graphic vocabulary, photography treatment, and page rhythm. Do not copy source text, "
         "source slides, or exact textbox coordinates. Recompose a 16:9 {page_type} page. "
-        "Interpretation: {style} Image2 owns background, scene, composition, and decoration. "
+        "Interpretation: {style} The configured visual generator owns background, scene, composition, and decoration. "
         "Leave clean regions for deterministic Chinese text, numbers, charts, and footnotes; "
         "do not render exact Chinese copy or data."
-    ).format(page_type=page_type, style=style)
+    ).format(page_type=page_type, style=style, visual_tool=visual_tool)
 
 
 def _generate_candidates(output_dir: Path, config: Mapping[str, Any], image2_adapter: Any) -> None:
     references = _references(config)
     if not references:
         raise RuntimeError("style candidates require reference_images from the supplied template")
+    visual_tool = _declared_visual_generator(output_dir, image2_adapter)
     for candidate, style in CANDIDATE_STYLES.items():
         candidate_dir = output_dir / "style-candidates" / candidate
         prompt_dir = candidate_dir / "prompts"
@@ -334,17 +349,17 @@ def _generate_candidates(output_dir: Path, config: Mapping[str, Any], image2_ada
             "interpretation": style,
             "template_application_mode": "style-reference",
             "reference_images": references,
-            "image_tool": "image2",
+            "image_tool": visual_tool,
             "deterministic_overlays": "Chinese text, numbers, charts, labels, and footnotes",
             **CANDIDATE_PROFILES[candidate],
             "layout_principles": "recompose for current content; preserve semantic hierarchy; keep deterministic overlay regions clear",
-            "prohibited_behaviors": "copy source slides; copy source text; lock source textbox coordinates; ask image2 to render exact Chinese or data",
+            "prohibited_behaviors": "copy source slides; copy source text; lock source textbox coordinates; ask the visual generator to render exact Chinese or data",
         }
         _write_yaml_scalars(candidate_dir / "style-profile.yaml", profile)
         for page_type in CANDIDATE_PAGES:
             prompt_path = prompt_dir / f"{page_type}.txt"
             prompt_path.parent.mkdir(parents=True, exist_ok=True)
-            prompt_path.write_text(_candidate_prompt(style, page_type) + "\n", encoding="utf-8")
+            prompt_path.write_text(_candidate_prompt(style, page_type, visual_tool=visual_tool) + "\n", encoding="utf-8")
             _call_image2(
                 image2_adapter,
                 output_dir=output_dir,
@@ -367,6 +382,20 @@ def _write_selected_style(output_dir: Path, candidate: str) -> None:
         "candidate_profile_path": f"style-candidates/{candidate}/style-profile.yaml",
         "template_profile": confirmed.get("template_profile", ""),
     })
+
+
+def _assert_template_contract(output_dir: Path, config: Mapping[str, Any]) -> None:
+    policy = _load_sibling("template_policy")
+    errors = list(policy.validate_imported_template_profile(output_dir, config))
+    confirmed = _read_mapping(Path(output_dir) / "deck-config.confirmed.yaml")
+    explicit_fields = {"template_application_mode"} if confirmed.get("confirmed_by") == "user" else set()
+    errors.extend(policy.validate_config_template_mode(
+        config,
+        confirmation_method=str(confirmed.get("confirmation_method", config.get("confirmation_method", ""))),
+        explicit_fields=explicit_fields,
+    ))
+    if errors:
+        raise RuntimeError("template contract failed: " + "; ".join(errors))
 
 
 def _failure_evidence(output_dir: Path, *, stage: str, error: Exception) -> Path:
@@ -438,7 +467,7 @@ def _select_candidate(output_dir: Path, input_fn: Callable[[str], str], output_f
     errors = guards.validate_style_candidates(output_dir)
     if errors:
         raise RuntimeError("; ".join(errors))
-    output_fn("三套 image2 风格候选已生成，请由用户选择；系统不会默认选择 Candidate A。")
+    output_fn(f"三套 {guards.expected_visual_tool(output_dir)} 风格候选已生成，请由用户选择；系统不会默认选择 Candidate A。")
     for index, (candidate, style) in enumerate(CANDIDATE_STYLES.items(), start=1):
         output_fn(f"  {index}) {candidate}: {style}")
     raw = _safe_input(input_fn, "Select candidate by number (blank = wait): ")
@@ -477,7 +506,7 @@ def _generate_slide_images(output_dir: Path, *, image2_adapter: Any, final: bool
         raise RuntimeError("; ".join(errors))
     destination = output_dir / ("final-images" if final else "preview-images")
     destination.mkdir(parents=True, exist_ok=True)
-    for index, spec in enumerate(specs, start=1):
+    for spec in specs:
         payload = guards.read_mapping(spec)
         prompt_path = spec.with_suffix(".image-prompt.txt")
         prompt = "\n\n".join([
@@ -492,7 +521,7 @@ def _generate_slide_images(output_dir: Path, *, image2_adapter: Any, final: bool
             output_dir=output_dir,
             prompt_path=prompt_path,
             reference_images=_spec_references(payload),
-            output_path=destination / f"slide-{index:02d}.png",
+            output_path=destination / f"{spec.stem}.png",
         )
     if final:
         _atomic_json(output_dir / "final-images-qa.json", {"status": "pass", "image_count": len(specs), "checked_at": _now()})
@@ -553,7 +582,7 @@ def run_once(
     """Advance from the current persisted state to at most the next human Gate."""
     output_dir = Path(output_dir).resolve()
     supplied = dict(config) if config is not None else _read_mapping(output_dir / "deck-config.yaml")
-    explicit = set(config.keys()) if config is not None else set()
+    explicit = set(config.keys()) if config is not None else set(supplied.keys())
     workflow_mode, selection_mode = resolve_modes(supplied, explicit)
     supplied["workflow_mode"] = workflow_mode
     supplied["selection_mode"] = selection_mode
@@ -593,6 +622,7 @@ def run_once(
                 supplied["confirmation_timestamp"] = _now()
                 confirmed_path = output_dir / "deck-config.confirmed.yaml"
                 _write_yaml_scalars(confirmed_path, supplied)
+                _assert_template_contract(output_dir, supplied)
                 state = machine.transition(
                     "generating_slide_specs",
                     stage="configuration",
@@ -609,6 +639,7 @@ def run_once(
                 return RunResult(state.build_status, state.message, state)
             confirmed_path = output_dir / "deck-config.confirmed.yaml"
             _write_yaml_scalars(confirmed_path, resolved)
+            _assert_template_contract(output_dir, resolved)
             router.route("producer", complexity="high", available_models=available_models)
             state = machine.transition(
                 "generating_style_candidates",
@@ -624,20 +655,21 @@ def run_once(
                 stage="style-selection",
                 actor="orchestrator",
                 evidence_files=[manifest_path],
-                message="three image2 candidates are ready for user selection",
+                message="three visual-generator candidates are ready for user selection",
             )
             return RunResult(state.build_status, state.message, state)
 
         if state.build_status == "generating_style_candidates":
             router.route("producer", complexity="high", available_models=available_models)
             confirmed = _read_mapping(output_dir / "deck-config.confirmed.yaml")
+            _assert_template_contract(output_dir, confirmed)
             _generate_candidates(output_dir, confirmed, image2_adapter)
             state = machine.transition(
                 "awaiting_style_selection",
                 stage="style-selection",
                 actor="orchestrator",
                 evidence_files=[output_dir / "image-generation-manifest.json"],
-                message="three image2 candidates are ready for user selection",
+                message="three visual-generator candidates are ready for user selection",
             )
             return RunResult(state.build_status, state.message, state)
 
@@ -655,42 +687,15 @@ def run_once(
                 evidence_files=[selected_path],
                 message="user selected style; slide specs are authorized",
             )
-            guards = _load_sibling("artifact_guards")
-            specs, errors = guards.validate_slide_specs(output_dir)
-            if errors:
-                raise RuntimeError("; ".join(errors))
-            state = machine.transition(
-                "generating_previews",
-                stage="previews",
-                actor="orchestrator",
-                evidence_files=specs,
-                message="slide specs validated",
-            )
-            _generate_slide_images(output_dir, image2_adapter=image2_adapter, final=False)
-            preview_files = sorted((output_dir / "preview-images").glob("slide-*.png"))
-            reviewer_decision = router.route("reviewer", available_models=available_models)
-            pack_manifest, review_request, checks_path = _prepare_review_pack(
-                output_dir,
-                rubric_name="preview-rubric.yaml",
-                reviewer_role="reviewer",
-                reviewer_model=reviewer_decision.model,
-                phase="preview",
-                slide_count=len(preview_files),
-            )
-            state = machine.transition(
-                "reviewing",
-                stage="preview-review",
-                actor="orchestrator",
-                evidence_files=[*preview_files, pack_manifest, review_request, checks_path],
-                message="previews generated; isolated Reviewer evaluation required",
-            )
             return RunResult(state.build_status, state.message, state)
 
         if state.build_status == "generating_slide_specs":
+            _assert_template_contract(output_dir, _read_mapping(output_dir / "deck-config.confirmed.yaml"))
             guards = _load_sibling("artifact_guards")
             specs, errors = guards.validate_slide_specs(output_dir)
             if errors:
-                raise RuntimeError("; ".join(errors))
+                state = machine.touch(message="waiting for Producer/Slide Worker slide-spec files")
+                return RunResult(state.build_status, state.message, state)
             state = machine.transition(
                 "generating_previews",
                 stage="previews",
